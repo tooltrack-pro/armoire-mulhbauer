@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armoire Mulhbauer — Gestion Stock</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;500;700;900&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #111318;
+    --border: #1e2330;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --red: #ff3b5c;
+    --yellow: #ffd700;
+    --text: #c8d0e0;
+    --dim: #5a6070;
+    /* niveau colors */
+    --bleu: #4fc3f7;
+    --vert: #66bb6a;
+    --orange: #ffa726;
+    --violet: #ab47bc;
+    --rose: #ec407a;
+    --jaune: #ffee58;
+    --blanc: #e0e0e0;
+    --gris: #78909c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--accent);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 {
+    font-size: 1.6rem; font-weight: 900; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  header .stats {
+    display: flex; gap: 20px;
+  }
+  .stat-box {
+    text-align: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 14px;
+    min-width: 80px;
+  }
+  .stat-box .num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.4rem; font-weight: 700;
+  }
+  .stat-box .lbl { font-size: 0.72rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-box.in .num { color: var(--green); }
+  .stat-box.out .num { color: var(--accent2); }
+  .stat-box.total .num { color: var(--accent); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+  }
+  .tab {
+    padding: 10px 24px;
+    font-size: 1rem; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; text-transform: uppercase;
+    border-bottom: 3px solid transparent;
+    color: var(--dim);
+    transition: all .2s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* ── MAIN ── */
+  .view { display: none; padding: 20px; }
+  .view.active { display: block; }
+
+  /* ── SCANNER ── */
+  .scanner-zone {
+    max-width: 700px; margin: 0 auto;
+  }
+  .scan-input-row {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .scan-input-row input {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem; color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .scan-input-row input:focus { border-color: var(--accent); }
+  .scan-input-row input::placeholder { color: var(--dim); }
+
+  .btn {
+    padding: 12px 22px;
+    border: none; border-radius: 8px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; text-transform: uppercase;
+    transition: all .15s;
+  }
+  .btn-in { background: var(--green); color: #000; }
+  .btn-in:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-out { background: var(--accent2); color: #fff; }
+  .btn-out:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-ghost {
+    background: transparent; color: var(--dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Result card */
+  .result-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: none;
+    animation: slideIn .25s ease;
+  }
+  .result-card.visible { display: block; }
+  .result-card.success { border-color: var(--green); }
+  .result-card.info { border-color: var(--accent); }
+  .result-card.error { border-color: var(--accent2); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .result-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+  }
+  .icon-in { background: rgba(0,255,136,.15); }
+  .icon-out { background: rgba(255,59,92,.15); }
+  .icon-info { background: rgba(0,229,255,.15); }
+
+  .result-title {
+    font-size: 1.5rem; font-weight: 900; letter-spacing: 1px;
+  }
+  .result-title.green { color: var(--green); }
+  .result-title.red { color: var(--accent2); }
+  .result-title.cyan { color: var(--accent); }
+
+  .location-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,229,255,.1);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+
+  .article-details {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .detail-item { background: var(--bg); border-radius: 6px; padding: 8px 12px; }
+  .detail-item .key { font-size: 0.72rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+  .detail-item .val { font-family: 'Space Mono', monospace; font-size: 0.9rem; color: var(--text); }
+
+  .niveau-chip {
+    display: inline-block;
+    padding: 2px 10px; border-radius: 4px;
+    font-size: 0.8rem; font-weight: 700; letter-spacing: 1px;
+  }
+
+  /* ── ARMOIRE VUE ── */
+  .armoire-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(4, 1fr);
+    gap: 4px;
+    max-width: 960px; margin: 0 auto;
+  }
+  .armoire-header {
+    background: #1a1e28;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--dim);
+  }
+  .armoire-header.pos { color: var(--accent); }
+  .niv-label {
+    background: var(--panel);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .niv-label .niv-name { font-size: 0.75rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  .niv-label .niv-format { font-size: 0.8rem; font-weight: 700; }
+
+  .cell {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: border-color .15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cell:hover { border-color: var(--accent); }
+  .cell.bp-cell {
+    border-style: dashed;
+    border-color: var(--gris);
+    cursor: default;
+  }
+  .cell.bp-cell:hover { border-color: var(--gris); }
+
+  .article-slot {
+    display: flex; flex-direction: column; gap: 3px;
+    margin-bottom: 4px;
+  }
+  .slot-ref {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--text);
+  }
+  .slot-code {
+    font-size: 0.68rem; color: var(--dim);
+    font-family: 'Space Mono', monospace;
+  }
+  .slot-status {
+    display: inline-block;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .status-in { background: rgba(0,255,136,.15); color: var(--green); }
+  .status-out { background: rgba(255,107,53,.15); color: var(--accent2); }
+
+  .empty-slot { color: var(--dim); font-size: 0.75rem; text-align: center; padding: 10px 0; }
+
+  /* ── LOG ── */
+  .log-table-wrap { overflow-x: auto; }
+  .log-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .log-table th {
+    background: #1a1e28;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .log-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.82rem;
+  }
+  .log-table tr:hover td { background: rgba(255,255,255,.02); }
+  .badge-in { color: var(--green); font-weight: 700; }
+  .badge-out { color: var(--accent2); font-weight: 700; }
+
+  /* ── QR GEN ── */
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .qr-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .qr-card .qr-ref { font-size: 1rem; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .qr-card .qr-code-num { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--dim); margin-bottom: 12px; }
+  .qr-card .qr-img { display: flex; justify-content: center; margin-bottom: 10px; }
+  .qr-card .qr-img canvas, .qr-card .qr-img img { border-radius: 4px; }
+  .qr-card .qr-loc {
+    font-size: 0.75rem; color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    background: rgba(0,229,255,.08);
+    border-radius: 4px; padding: 3px 8px;
+    display: inline-block; margin-top: 4px;
+  }
+
+  .section-title {
+    font-size: 1.1rem; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--dim);
+    margin: 20px 0 12px;
+    border-left: 3px solid var(--accent); padding-left: 12px;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--panel);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-size: 0.95rem; font-weight: 700;
+    color: var(--text);
+    z-index: 999;
+    animation: toastIn .3s ease;
+    max-width: 320px;
+  }
+  .toast.red { border-left-color: var(--accent2); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 14px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.95rem; color: var(--text);
+    outline: none;
+  }
+  .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+  .filter-bar select option { background: var(--panel); }
+
+  .color-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    display: inline-block; margin-right: 6px;
+  }
+
+  /* ── MACHINE SELECTOR ── */
+  .machine-selector {
+    display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .machine-btn {
+    flex: 1; min-width: 120px;
+    padding: 14px 10px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    color: var(--dim);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; text-align: center;
+    transition: all .2s;
+    text-transform: uppercase;
+  }
+  .machine-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .machine-btn.selected {
+    border-color: var(--accent2);
+    background: rgba(255,107,53,.12);
+    color: var(--accent2);
+    box-shadow: 0 0 12px rgba(255,107,53,.2);
+  }
+  .machine-btn .m-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+
+  .machine-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,107,53,.12);
+    border: 1px solid var(--accent2);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 14px;
+  }
+
+  .machine-tag {
+    display: inline-block;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    background: rgba(255,107,53,.15); color: var(--accent2);
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: var(--panel);
+    border: 2px solid var(--accent2);
+    border-radius: 14px;
+    padding: 36px;
+    max-width: 560px; width: 95%;
+    animation: slideIn .25s ease;
+  }
+  .modal-title {
+    font-size: 1.4rem; font-weight: 900; letter-spacing: 1px;
+    color: var(--accent2); margin-bottom: 8px; text-transform: uppercase;
+  }
+  .modal-sub { font-size: .9rem; color: var(--dim); margin-bottom: 20px; }
+  .modal-machines { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .modal-machine-btn {
+    padding: 22px 16px;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem; font-weight: 700;
+    cursor: pointer; text-align: center;
+    transition: all .15s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .modal-machine-btn:hover {
+    border-color: var(--accent2);
+    background: rgba(255,107,53,.15);
+    color: var(--accent2);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255,107,53,.25);
+  }
+  .modal-machine-btn .mm-icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+  .modal-cancel {
+    width: 100%; padding: 10px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--dim);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: .95rem; cursor: pointer;
+    transition: all .15s;
+  }
+  .modal-cancel:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── RFB MODAL ── */
+  .rfb-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.85);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .rfb-overlay.visible { display: flex; }
+  .rfb-box {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    width: 90%; max-width: 900px;
+    height: 85vh;
+    display: flex; flex-direction: column;
+    animation: slideIn .25s ease;
+    overflow: hidden;
+  }
+  .rfb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(0,229,255,.08);
+    border-bottom: 1px solid var(--border);
+  }
+  .rfb-title {
+    font-size: 1.2rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .rfb-close {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--dim); border-radius: 6px;
+    padding: 6px 14px; cursor: pointer;
+    font-family: 'Barlow Condensed',sans-serif;
+    font-size: .9rem; font-weight: 700;
+    transition: all .15s;
+  }
+  .rfb-close:hover { border-color: var(--accent2); color: var(--accent2); }
+  .rfb-body {
+    flex: 1; overflow: hidden;
+    display: flex; flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+  .rfb-pdf-frame {
+    flex: 1; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  .rfb-no-pdf {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--dim); text-align: center;
+  }
+  .rfb-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--accent);
+    font-weight: 700; font-size: .9rem;
+    cursor: pointer; text-decoration: underline;
+    background: none; border: none;
+    font-family: 'Barlow Condensed',sans-serif;
+    letter-spacing: 1px;
+    transition: color .15s;
+  }
+  .rfb-link:hover { color: var(--green); }
+
+  /* ── MACHINES VIEW ── */
+  .machines-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .machine-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .machine-card-header {
+    background: rgba(255,107,53,.12);
+    border-bottom: 2px solid var(--accent2);
+    padding: 14px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .machine-card-title {
+    font-size: 1.4rem; font-weight: 900; letter-spacing: 2px;
+    color: var(--accent2); text-transform: uppercase;
+  }
+  .machine-card-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem; font-weight: 700;
+    background: var(--accent2);
+    color: #000;
+    border-radius: 20px;
+    padding: 2px 12px;
+    min-width: 32px; text-align: center;
+  }
+  .machine-card-count.zero {
+    background: var(--border); color: var(--dim);
+  }
+  .machine-card-body {
+    padding: 12px;
+    min-height: 120px;
+  }
+  .machine-article-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    transition: border-color .15s;
+  }
+  .machine-article-row:hover { border-color: var(--accent2); }
+  .machine-article-row:last-child { margin-bottom: 0; }
+  .mar-left { display: flex; flex-direction: column; gap: 2px; }
+  .mar-ref {
+    font-size: 1rem; font-weight: 700; color: var(--text);
+  }
+  .mar-code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem; color: var(--dim);
+  }
+  .mar-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .mar-niv {
+    font-size: 0.72rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .mar-extra { font-size: 0.7rem; color: var(--dim); }
+  .machine-empty {
+    text-align: center; color: var(--dim);
+    font-size: .9rem; padding: 30px 0;
+  }
+  .machine-empty .empty-icon { font-size: 2rem; display: block; margin-bottom: 8px; opacity: .4; }
+
+  /* ── RFB MODAL ── */
+  #rfbOverlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.85);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  #rfbOverlay.visible { display: flex; }
+  .rfb-box {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    width: 90%; max-width: 860px;
+    max-height: 92vh;
+    display: flex; flex-direction: column;
+    animation: slideIn .25s ease;
+    overflow: hidden;
+  }
+  .rfb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: rgba(0,229,255,.06);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .rfb-header-left { display: flex; align-items: center; gap: 12px; }
+  .rfb-title {
+    font-size: 1.3rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .rfb-sub { font-size: .85rem; color: var(--dim); margin-top: 2px; }
+  .rfb-close {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--dim); border-radius: 8px;
+    padding: 8px 14px; font-family: 'Barlow Condensed',sans-serif;
+    font-size: 1rem; cursor: pointer; transition: all .15s;
+  }
+  .rfb-close:hover { border-color: var(--red2); color: #ff6b6b; }
+  .rfb-body {
+    flex: 1; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .rfb-pdf-container {
+    flex: 1; background: #fff;
+    min-height: 500px;
+  }
+  .rfb-pdf-container iframe {
+    width: 100%; height: 100%; min-height: 500px;
+    border: none;
+  }
+  .rfb-placeholder {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px; text-align: center;
+    background: rgba(0,229,255,.03);
+  }
+  .rfb-placeholder .ph-icon { font-size: 4rem; margin-bottom: 16px; opacity: .5; }
+  .rfb-placeholder .ph-title {
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .rfb-placeholder .ph-sub { font-size: .9rem; color: var(--dim); line-height: 1.6; }
+  .rfb-steps {
+    padding: 16px 24px;
+    background: rgba(0,0,0,.3);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .rfb-steps-title {
+    font-size: .8rem; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .rfb-steps-list {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .rfb-step {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    font-size: .85rem; color: var(--text);
+  }
+  .rfb-step .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    font-weight: 900; font-size: .8rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* RFB link in entry result */
+  .rfb-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,229,255,.1);
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'Barlow Condensed',sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--accent); cursor: pointer;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: all .2s; margin-top: 12px;
+    animation: pulse 2s infinite;
+  }
+  .rfb-link:hover {
+    background: rgba(0,229,255,.2);
+    transform: scale(1.02);
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,229,255,.3); }
+    50%      { box-shadow: 0 0 0 8px rgba(0,229,255,.0); }
+  }
+  :root { --red2: #ff6b6b; }
+
+  /* ── INVENTAIRE ── */  /* ── INVENTAIRE ── */
+  .inv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px; margin-top: 8px;
+  }
+  .inv-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .inv-card.bon    { border-color: var(--green); }
+  .inv-card.incomplet { border-color: var(--accent2); }
+  .inv-card.header-only { border-color: var(--border); }
+  .inv-card-header {
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,.03);
+    border-bottom: 1px solid var(--border);
+  }
+  .inv-card-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+  .inv-card-code  { font-family: 'Space Mono',monospace; font-size: .75rem; color: var(--dim); }
+  .inv-status-badge {
+    font-size: .72rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-bon      { background: rgba(0,255,136,.15); color: var(--green); }
+  .badge-incomplet{ background: rgba(255,107,53,.15); color: var(--accent2); }
+  .badge-pending  { background: rgba(255,255,255,.08); color: var(--dim); }
+  .inv-components { padding: 10px 14px; }
+  .comp-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-row:last-child { border-bottom: none; }
+  .comp-name { font-size: .88rem; color: var(--text); }
+  .comp-code { font-family: 'Space Mono',monospace; font-size: .7rem; color: var(--dim); }
+  .comp-btns { display: flex; gap: 6px; }
+  .comp-btn {
+    padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: .75rem; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+    font-family: 'Barlow Condensed',sans-serif;
+    letter-spacing: .5px; text-transform: uppercase;
+  }
+  .comp-btn.bon      { border-color: var(--green); color: var(--green); }
+  .comp-btn.bon.sel  { background: var(--green); color: #000; }
+  .comp-btn.man      { border-color: var(--accent2); color: var(--accent2); }
+  .comp-btn.man.sel  { background: var(--accent2); color: #000; }
+  .comp-btn.def      { border-color: #ffcc00; color: #ffcc00; }
+  .comp-btn.def.sel  { background: #ffcc00; color: #000; }
+  .inv-filter-bar { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .inv-filter-bar select, .inv-filter-bar input {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 14px;
+    font-family: 'Barlow Condensed',sans-serif;
+    font-size: .95rem; color: var(--text); outline: none;
+  }
+  .inv-summary {
+    display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .inv-sum-box {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 16px; text-align: center; min-width: 90px;
+  }
+  .inv-sum-box .n { font-family:'Space Mono',monospace; font-size:1.3rem; font-weight:700; }
+  .inv-sum-box .l { font-size:.7rem; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+
+  @media (max-width: 900px) {  @media (max-width: 900px) {
+    .machines-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    header { flex-direction: column; gap: 8px; }
+    .armoire-grid { grid-template-columns: 50px repeat(4, 1fr); font-size: 0.7rem; }
+    .modal-machines { grid-template-columns: 1fr 1fr; }
+    .machines-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚙ Armoire Mulhbauer</h1>
+  <div class="stats">
+    <div class="stat-box total"><div class="num" id="statTotal">0</div><div class="lbl">Total articles</div></div>
+    <div class="stat-box in"><div class="num" id="statIn">0</div><div class="lbl">En armoire</div></div>
+    <div class="stat-box out" style="border:2px solid var(--accent2);background:rgba(255,107,53,.08);">
+      <div class="num" id="statOut" style="font-size:1.8rem;">0</div>
+      <div class="lbl" style="color:var(--accent2);font-weight:700;">⚙ En production</div>
+    </div>
+  </div>
+  <button onclick="clearAll()" style="background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:6px;padding:6px 12px;font-family:'Barlow Condensed',sans-serif;font-size:.85rem;cursor:pointer;letter-spacing:1px;" title="Réinitialiser toutes les données">🔄 Reset</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('scan')">📷 Scanner</div>
+  <div class="tab" onclick="switchTab('armoire')">🗄️ Armoire</div>
+  <div class="tab" onclick="switchTab('machines')">⚙ Machines</div>
+  <div class="tab" onclick="switchTab('inventaire')">📦 Inventaire</div>
+  <div class="tab" onclick="switchTab('log')">📋 Historique</div>
+  <div class="tab" onclick="switchTab('qr')">🔲 Codes QR</div>
+</div>
+
+<!-- ══════════ MODAL RFB ══════════ -->
+
+<!-- ══════════ MODAL MACHINE ══════════ -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <div style="text-align:center;margin-bottom:6px;font-size:2rem;">📤</div>
+    <div class="modal-title" style="text-align:center;font-size:1.6rem;">SORTIE — CHOISIR LA MACHINE</div>
+    <div class="modal-sub" id="modalArticleName" style="text-align:center;font-size:1rem;margin-bottom:24px;color:var(--text)"></div>
+    <div class="modal-machines">
+      <button class="modal-machine-btn" onclick="confirmSortie('CT12/1')">
+        <span class="mm-icon">⚙</span>CT12 / 1
+      </button>
+      <button class="modal-machine-btn" onclick="confirmSortie('CT12/2')">
+        <span class="mm-icon">⚙</span>CT12 / 2
+      </button>
+      <button class="modal-machine-btn" onclick="confirmSortie('CT12/3')">
+        <span class="mm-icon">⚙</span>CT12 / 3
+      </button>
+      <button class="modal-machine-btn" onclick="confirmSortie('CT12/4')">
+        <span class="mm-icon">⚙</span>CT12 / 4
+      </button>
+    </div>
+    <button class="modal-cancel" onclick="closeModal()">✕ Annuler le scan</button>
+  </div>
+</div>
+
+<!-- ══════════ MODAL RFB ══════════ -->
+<div id="rfbOverlay">
+  <div class="rfb-box">
+    <div class="rfb-header">
+      <div class="rfb-header-left">
+        <div style="font-size:1.8rem;">📋</div>
+        <div>
+          <div class="rfb-title">Règles de Fiche de Bon (RFB)</div>
+          <div class="rfb-sub">Procédure de nettoyage avant rangement</div>
+        </div>
+      </div>
+      <button class="rfb-close" onclick="closeRFB()">✕ Fermer</button>
+    </div>
+    <div class="rfb-body">
+      <div id="rfbContent" class="rfb-pdf-container" style="display:none;">
+        <iframe id="rfbIframe" src="" title="RFB Document"></iframe>
+      </div>
+      <div class="rfb-placeholder" id="rfbPlaceholder">
+        <div class="ph-icon">📄</div>
+        <div class="ph-title">Document RFB en cours de préparation</div>
+        <div class="ph-sub">
+          Le fichier PDF du RFB sera disponible prochainement.<br>
+          En attendant, suivez les étapes de nettoyage ci-dessous.
+        </div>
+      </div>
+    </div>
+    <div class="rfb-steps">
+      <div class="rfb-steps-title">🧹 Étapes de nettoyage obligatoires</div>
+      <div class="rfb-steps-list">
+        <div class="rfb-step"><span class="step-num">1</span>Nettoyer les plaques chauffantes</div>
+        <div class="rfb-step"><span class="step-num">2</span>Vérifier les pièces moules</div>
+        <div class="rfb-step"><span class="step-num">3</span>Contrôler la cale moule</div>
+        <div class="rfb-step"><span class="step-num">4</span>Inspecter visuellement l'ensemble</div>
+        <div class="rfb-step"><span class="step-num">5</span>Ranger à l'emplacement indiqué</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCANNER ══════════ -->
+<div id="view-scan" class="view active">
+  <div class="scanner-zone">
+
+    <!-- STEP 1: Choose action FIRST -->
+    <div style="margin-bottom:16px;">
+      <p style="color:var(--dim);font-size:.9rem;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        ① Choisissez d'abord l'action :
+      </p>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-in" id="btnModeIn" onclick="setMode('IN')"
+          style="flex:1;font-size:1.1rem;padding:16px;border:3px solid transparent;">
+          ↙ ENTRÉE<br><span style="font-size:.75rem;font-weight:400;opacity:.8">Article revient à l'armoire</span>
+        </button>
+        <button class="btn btn-out" id="btnModeOut" onclick="setMode('OUT')"
+          style="flex:1;font-size:1.1rem;padding:16px;border:3px solid transparent;">
+          ↗ SORTIE<br><span style="font-size:.75rem;font-weight:400;opacity:.8">Article part en production</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Scan -->
+    <div id="step2" style="opacity:.4;pointer-events:none;transition:all .3s;">
+      <p style="color:var(--dim);font-size:.9rem;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        ② Scannez ou tapez le code article :
+      </p>
+      <div class="scan-input-row">
+        <input type="text" id="scanInput" placeholder="Scannez le code QR..." autofocus
+               onkeydown="if(event.key==='Enter') doScan()" />
+        <button class="btn btn-primary" onclick="doScan()">✔ Valider</button>
+      </div>
+    </div>
+
+    <div id="modeIndicator" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-weight:700;font-size:1rem;letter-spacing:1px;"></div>
+
+
+    <!-- ── ENTRÉE : grand emplacement ── -->
+    <div id="entreeDisplay" style="display:none;margin-top:16px;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:3rem;margin-bottom:4px;">✅</div>
+        <div style="font-size:1.8rem;font-weight:900;color:var(--green);letter-spacing:2px;text-transform:uppercase;">ENTRÉE ENREGISTRÉE</div>
+        <div style="font-size:1rem;color:var(--dim);margin-top:4px;" id="entreeRef"></div>
+        <div style="margin-top:10px;padding:10px 16px;background:rgba(0,229,255,.08);border:1px solid var(--accent);border-radius:8px;font-size:.95rem;">
+          🧹 Avant de ranger, nettoyez l'article selon le
+          <button class="rfb-link" onclick="openRFB()">📋 RFB de nettoyage</button>
+        </div>
+      </div>
+      <div style="background:rgba(0,255,136,.08);border:3px solid var(--green);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:.85rem;color:var(--green);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">📍 RANGEZ ICI</div>
+        <div style="font-size:2.6rem;font-weight:900;color:#fff;font-family:'Space Mono',monospace;letter-spacing:2px;line-height:1.3;" id="entreeLoc"></div>
+        <div style="font-size:1rem;color:var(--dim);margin-top:8px;" id="entreeLocSub"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="entreeDetails"></div>
+    </div>
+
+    <!-- ── SORTIE : confirmation machine ── -->
+    <div id="sortieDisplay" style="display:none;margin-top:16px;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:3rem;margin-bottom:4px;">📤</div>
+        <div style="font-size:1.8rem;font-weight:900;color:var(--accent2);letter-spacing:2px;text-transform:uppercase;">SORTIE ENREGISTRÉE</div>
+        <div style="font-size:1rem;color:var(--dim);margin-top:4px;" id="sortieRef"></div>
+      </div>
+      <div style="background:rgba(255,107,53,.1);border:3px solid var(--accent2);border-radius:16px;padding:28px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:.85rem;color:var(--accent2);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">⚙ MACHINE EN PRODUCTION</div>
+        <div style="font-size:3.5rem;font-weight:900;color:var(--accent2);font-family:'Space Mono',monospace;letter-spacing:3px;" id="sortieMachine"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="sortieDetails"></div>
+    </div>
+
+    <!-- ── Article non trouvé ── -->
+    <div id="notFound" style="display:none;margin-top:16px;background:rgba(255,59,92,.08);border:2px solid var(--accent2);border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+      <div style="font-size:1.2rem;font-weight:700;color:var(--accent2);">Article non trouvé</div>
+      <div style="font-size:.9rem;color:var(--dim);margin-top:4px;">Ce code n'est pas dans la base. Vérifiez le scan.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ARMOIRE ══════════ -->
+<div id="view-armoire" class="view">
+  <div style="max-width:960px;margin:0 auto;">
+    <div class="section-title">Vue Armoire — État en temps réel</div>
+    <div id="armoireGrid" class="armoire-grid"></div>
+    <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:10px;" id="legende"></div>
+  </div>
+</div>
+
+<!-- ══════════ INVENTAIRE ══════════ -->
+<div id="view-inventaire" class="view">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-title">Inventaire des composants</div>
+    <div class="inv-filter-bar">
+      <select id="invFilter" onchange="renderInventaire()">
+        <option value="">Tous les articles</option>
+        <option value="BP">Blocs Poinçonnage</option>
+      </select>
+      <select id="invStatusFilter" onchange="renderInventaire()">
+        <option value="">Tous statuts</option>
+        <option value="bon">✅ Bon</option>
+        <option value="incomplet">⚠ Incomplet</option>
+        <option value="pending">— Non vérifié</option>
+      </select>
+      <button class="btn btn-ghost" onclick="resetInventaire()">🔄 Réinitialiser</button>
+      <button class="btn btn-primary" onclick="exportInventaire()">📋 Exporter rapport</button>
+    </div>
+    <div class="inv-summary" id="invSummary"></div>
+    <div class="inv-grid" id="invGrid"></div>
+  </div>
+</div>
+
+<!-- ══════════ LOG ══════════ -->
+<div id="view-log" class="view">
+  <div class="section-title">Historique des mouvements</div>
+  <div class="filter-bar">
+    <input type="text" id="filterSearch" placeholder="🔍 Rechercher ref, code..." oninput="renderLog()" />
+    <select id="filterType" onchange="renderLog()">
+      <option value="">Tous mouvements</option>
+      <option value="IN">Entrées</option>
+      <option value="OUT">Sorties</option>
+    </select>
+    <select id="filterMachine" onchange="renderLog()">
+      <option value="">Toutes machines</option>
+      <option value="CT12/1">CT12/1</option>
+      <option value="CT12/2">CT12/2</option>
+      <option value="CT12/3">CT12/3</option>
+      <option value="CT12/4">CT12/4</option>
+    </select>
+    <button class="btn btn-ghost" onclick="clearLog()">🗑 Effacer historique</button>
+    <button class="btn btn-primary" onclick="exportExcel()" style="background:var(--green);color:#000;">📊 Exporter Excel</button>
+  </div>
+  <div class="log-table-wrap">
+    <table class="log-table">
+      <thead><tr>
+        <th>Date/Heure</th><th>Référence</th><th>Code</th>
+        <th>Mouvement</th><th>Machine</th><th>Niveau</th><th>Emplacement</th>
+      </tr></thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    <p id="logEmpty" style="text-align:center;color:var(--dim);padding:30px;display:none;">Aucun mouvement enregistré.</p>
+  </div>
+</div>
+
+<!-- ══════════ MACHINES ══════════ -->
+<div id="view-machines" class="view">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-title">Articles en production — par machine</div>
+    <div id="machinesGrid" class="machines-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════ QR CODES ══════════ -->
+<div id="view-qr" class="view">
+  <div class="section-title">Générer les codes QR</div>
+  <p style="color:var(--dim);margin-bottom:16px;">Imprimez ces codes QR et collez-les sur chaque article.</p>
+  <div class="filter-bar">
+    <select id="qrFilter" onchange="renderQR()">
+      <option value="">Tous les articles</option>
+      <option value="BP">Blocs Poinçonnage</option>
+    </select>
+    <select id="qrType" onchange="renderQR()">
+      <option value="articles">QR Articles</option>
+      <option value="composants">QR Composants</option>
+    </select>
+    <button class="btn btn-primary" onclick="window.print()">🖨 Imprimer</button>
+  </div>
+  <div id="qrGrid" class="qr-grid"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  DATA — Armoire Mulhbauer
+// ══════════════════════════════════════════════════════
+const NIVEAUX = [
+  { id:"NIV1", name:"NIV 1", format:"44/20", color:"--bleu", colorHex:"#4fc3f7" },
+  { id:"NIV2", name:"NIV 2", format:"32/20", color:"--vert", colorHex:"#66bb6a" },
+  { id:"NIV3", name:"NIV 3", format:"32/25+24", color:"--orange", colorHex:"#ffa726" },
+  { id:"NIV4", name:"NIV 4", format:"44/25+56", color:"--rose", colorHex:"#ec407a" },
+  { id:"NIV5", name:"NIV 5", format:"Pièces de rechange", color:"--blanc", colorHex:"#e0e0e0" },
+];
+
+// Articles: { ref, code, niv, pos (A/B/C/BP), extra }
+const ARTICLES_BASE = [
+  // NIV 1 — 44/20
+  { ref:"2UM",             code:"467364", niv:"NIV1", pos:"A" },
+  { ref:"2UA",             code:"444279", niv:"NIV1", pos:"A" },
+  { ref:"19K",             code:"509171", niv:"NIV1", pos:"B" },
+  { ref:"19L",             code:"509172", niv:"NIV1", pos:"B" },
+  { ref:"2AA",             code:"440712", niv:"NIV1", pos:"C" },
+  { ref:"2AX",             code:"440711", niv:"NIV1", pos:"C" },
+  { ref:"BP 44/20 + Vérin 20", code:"BP4420", niv:"NIV1", pos:"BP", isBP:true },
+
+  // NIV 2 — 32/20
+  { ref:"20W",             code:"451799", niv:"NIV2", pos:"A", extra:"(44/20)" },
+  { ref:"2FT",             code:"482773", niv:"NIV2", pos:"A", extra:"(44/20)" },
+  { ref:"12L",             code:"482775", niv:"NIV2", pos:"B" },
+  { ref:"12H",             code:"381625", niv:"NIV2", pos:"B" },
+  { ref:"11K",             code:"474277", niv:"NIV2", pos:"C" },
+  { ref:"10E & 10Z",       code:"344461", niv:"NIV2", pos:"C" },
+  { ref:"BP 32/20 + Vérin 20", code:"BP3220", niv:"NIV2", pos:"BP", isBP:true },
+
+  // NIV 3 — 32/25+24
+  { ref:"10D",             code:"444710", niv:"NIV3", pos:"A" },
+  { ref:"11D",             code:"437979", niv:"NIV3", pos:"A" },
+  { ref:"10M",             code:"437119", niv:"NIV3", pos:"B" },
+  { ref:"10M",             code:"437119", niv:"NIV3", pos:"B" },
+  { ref:"1AC",             code:"375756", niv:"NIV3", pos:"C", extra:"(24)" },
+  { ref:"1KA & 1KB",       code:"339709", niv:"NIV3", pos:"C", extra:"(24)" },
+  { ref:"BP 32/25 + Vérin 25", code:"BP3225", niv:"NIV3", pos:"BP", isBP:true },
+
+  // NIV 4 — 44/25+56
+  { ref:"14D",             code:"397834", niv:"NIV4", pos:"A" },
+  { ref:"20Z",             code:"381646", niv:"NIV4", pos:"A" },
+  { ref:"2DW",             code:"467365", niv:"NIV4", pos:"B" },
+  { ref:"2BO",             code:"440170", niv:"NIV4", pos:"C", extra:"(56)" },
+  { ref:"BP 44/25",        code:"BP4425", niv:"NIV4", pos:"BP", isBP:true },
+  { ref:"BP 24 + Vérin 25",code:"BP24V25",niv:"NIV4", pos:"BP", isBP:true },
+];
+
+// ── STATE ──
+let inventory = {}; // code -> "IN" | "OUT"
+let machine = {};   // code -> "CT12/1" | "CT12/2" | etc.
+let log = [];       // [{ts,ref,code,action,machine,niv,loc}]
+let pendingSortieArticle = null; // article en attente de choix machine
+
+function initState(){
+  const saved    = localStorage.getItem("mulh_inv");
+  const savedLog = localStorage.getItem("mulh_log");
+  const savedMac = localStorage.getItem("mulh_mac");
+
+  // Charger machine d'abord
+  if(savedMac){ machine = JSON.parse(savedMac); }
+
+  if(saved){
+    inventory = JSON.parse(saved);
+    // Corriger les articles OUT sans machine associee (anciennes donnees)
+    ARTICLES_BASE.forEach(a=>{
+      if(inventory[a.code]==="OUT" && !machine[a.code]){
+        inventory[a.code] = "IN";
+      }
+    });
+  } else {
+    ARTICLES_BASE.forEach(a=>{ inventory[a.code]="IN"; });
+  }
+
+  if(savedLog){
+    const parsed = JSON.parse(savedLog);
+    // Garder seulement les logs valides
+    log = parsed.filter(e => e.action==="IN" || (e.action==="OUT" && e.machine));
+  }
+
+  // Sauvegarder etat nettoye
+  saveState();
+  // Charger inventaire composants
+  const savedComp = localStorage.getItem("mulh_inv_comp");
+  if(savedComp) invData = JSON.parse(savedComp);
+}
+function saveState(){
+  localStorage.setItem("mulh_inv", JSON.stringify(inventory));
+  localStorage.setItem("mulh_log", JSON.stringify(log));
+  localStorage.setItem("mulh_mac", JSON.stringify(machine));
+}
+
+// ── LOOKUP ──
+function findArticle(query){
+  query = query.trim().toUpperCase();
+  return ARTICLES_BASE.find(a =>
+    a.code.toUpperCase() === query ||
+    a.ref.toUpperCase() === query ||
+    a.ref.toUpperCase().replace(/\s/g,"") === query.replace(/\s/g,"")
+  );
+}
+
+function getLocation(article){
+  const niv = getNivInfo(article.niv);
+  const posName = article.pos === "BP" ? "Pos.4 (BP)" : `Pos.${article.pos==="A"?"1":article.pos==="B"?"2":"3"} (${article.pos})`;
+  return `${niv?.name} — ${posName}`;
+}
+
+function getNivColor(nivId){
+  const map = {NIV1:"#4fc3f7",NIV2:"#66bb6a",NIV3:"#ffa726",NIV4:"#ec407a",NIV5:"#e0e0e0"};
+  return map[nivId]||"#aaaaaa";
+}
+
+// Retourne le NIV complet (depuis NIVEAUX ou construit dynamiquement)
+function getNivInfo(nivId){
+  return NIVEAUX.find(n=>n.id===nivId) || {
+    id:       nivId,
+    name:     nivId,
+    format:   "",
+    colorHex: getNivColor(nivId)
+  };
+}
+
+// ── SCAN MODE ──
+let currentMode = null; // "IN" or "OUT"
+
+function setMode(mode){
+  currentMode = mode;
+  // Enable step 2
+  document.getElementById("step2").style.opacity = "1";
+  document.getElementById("step2").style.pointerEvents = "auto";
+  // Highlight selected button
+  document.getElementById("btnModeIn").style.border  = mode==="IN"  ? "3px solid var(--green)" : "3px solid transparent";
+  document.getElementById("btnModeOut").style.border = mode==="OUT" ? "3px solid var(--accent2)"   : "3px solid transparent";
+  // Show indicator
+  const ind = document.getElementById("modeIndicator");
+  ind.style.display = "block";
+  if(mode==="IN"){
+    ind.style.background = "rgba(0,255,136,.12)";
+    ind.style.color = "var(--green)";
+    ind.style.border = "1px solid var(--green)";
+    ind.textContent = "✅ Mode ENTRÉE sélectionné — Scannez l'article";
+  } else {
+    ind.style.background = "rgba(255,59,92,.12)";
+    ind.style.color = "var(--accent2)";
+    ind.style.border = "1px solid var(--accent2)";
+    ind.textContent = "📤 Mode SORTIE sélectionné — Scannez l'article";
+  }
+  document.getElementById("scanInput").value = "";
+  document.getElementById("scanInput").focus();
+}
+
+function doScan(){
+  if(!currentMode){ showToast("Choisissez d'abord ENTRÉE ou SORTIE !","red"); return; }
+  const val = document.getElementById("scanInput").value.trim();
+  if(!val){ showToast("Scannez ou tapez un code article","red"); return; }
+  const article = findArticle(val);
+  const notFound = document.getElementById("notFound");
+  const entreeDiv = document.getElementById("entreeDisplay");
+  const sortieDiv = document.getElementById("sortieDisplay");
+
+  if(!article){
+    if(notFound) notFound.style.display="block";
+    if(entreeDiv) entreeDiv.style.display="none";
+    if(sortieDiv) sortieDiv.style.display="none";
+    document.getElementById("scanInput").select();
+    return;
+  }
+  if(notFound) notFound.style.display="none";
+
+  if(currentMode==="OUT"){
+    // Check inventaire — block if incomplet
+    const artStatus = getArticleStatus(article);
+    if(artStatus==="incomplet"){
+      showToast("⚠ Article INCOMPLET — vérifiez l'inventaire avant de sortir !","orange");
+      const comps = getComponents(article);
+      const problems = comps.filter(c=>invData[c.code]==="man"||invData[c.code]==="def");
+      document.getElementById("entreeDisplay").style.display="none";
+      document.getElementById("sortieDisplay").style.display="none";
+      document.getElementById("notFound").style.display="block";
+      document.getElementById("notFound").innerHTML = `
+        <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--accent2);">SORTIE BLOQUÉE — Article incomplet</div>
+        <div style="font-size:.9rem;color:var(--dim);margin-top:6px;">${article.ref} (${article.code})</div>
+        <div style="margin-top:10px;">${problems.map(c=>`<div style="color:var(--accent2);font-size:.85rem;">❌ ${c.name} : ${invData[c.code]==="man"?"Manquant":"Défectueux"}</div>`).join("")}</div>
+        <div style="margin-top:10px;font-size:.8rem;color:var(--dim);">Allez dans l'onglet 📦 Inventaire pour corriger.</div>
+      `;
+      document.getElementById("scanInput").value="";
+      return;
+    }
+    pendingSortieArticle = article;
+    document.getElementById("modalArticleName").textContent =
+      article.ref + " (" + article.code + ") — Sur quelle machine CT12 ?";
+    document.getElementById("modalOverlay").classList.add("visible");
+    return;
+  }
+
+  finalizeScan(article, "IN", null);
+}
+
+function confirmSortie(machineName){
+  const article = pendingSortieArticle; // sauvegarde avant closeModal
+  pendingSortieArticle = null;
+  document.getElementById("modalOverlay").classList.remove("visible");
+  if(!article) return;
+  finalizeScan(article, "OUT", machineName);
+}
+
+function closeModal(){
+  document.getElementById("modalOverlay").classList.remove("visible");
+  document.getElementById("scanInput").value = "";
+  document.getElementById("scanInput").focus();
+  pendingSortieArticle = null;
+}
+
+function finalizeScan(article, action, machineName){
+  inventory[article.code] = action;
+  if(action==="OUT") machine[article.code] = machineName;
+  else delete machine[article.code];
+
+  const loc = getLocation(article);
+  const niv = getNivInfo(article.niv);
+
+  log.unshift({
+    ts: new Date().toLocaleString("fr-FR"),
+    ref: article.ref,
+    code: article.code,
+    action,
+    machine: machineName || "",
+    niv: article.niv,
+    loc
+  });
+  saveState();
+  updateStats();
+
+  // ── Show result ──
+  const entreeDiv = document.getElementById("entreeDisplay");
+  const sortieDiv = document.getElementById("sortieDisplay");
+  if(!entreeDiv || !sortieDiv) return;
+
+  const detailHTML = (mac) => `
+    <div class="detail-item"><div class="key">Référence</div><div class="val">${article.ref}</div></div>
+    <div class="detail-item"><div class="key">Code</div><div class="val">${article.code}</div></div>
+    <div class="detail-item"><div class="key">Niveau</div><div class="val"><span class="niveau-chip" style="background:${getNivColor(article.niv)}22;color:${getNivColor(article.niv)}">${niv?.name} — ${niv?.format||""}</span></div></div>
+  `;
+
+  if(action==="IN"){
+    entreeDiv.style.display = "block";
+    sortieDiv.style.display = "none";
+    // Parse location into big display
+    // loc = "NIV X — Pos.Y (Z)"
+    const nivPart = niv?.name || "";
+    const posPart = article.pos==="A"?"POSITION 1 (A)":article.pos==="B"?"POSITION 2 (B)":article.pos==="C"?"POSITION 3 (C)":"POSITION 4 (BP)";
+    document.getElementById("entreeRef").textContent = article.ref + "  —  Code : " + article.code;
+    document.getElementById("entreeLoc").textContent = nivPart + "   —   " + posPart;
+    document.getElementById("entreeLocSub").textContent = "Format : " + (niv?.format||"") + (article.extra?" "+article.extra:"");
+    document.getElementById("entreeDetails").innerHTML = detailHTML(null);
+  } else {
+    entreeDiv.style.display = "none";
+    sortieDiv.style.display = "block";
+    document.getElementById("sortieRef").textContent = article.ref + "  —  Code : " + article.code;
+    document.getElementById("sortieMachine").textContent = machineName;
+    document.getElementById("sortieDetails").innerHTML = detailHTML(machineName);
+  }
+
+  document.getElementById("scanInput").value = "";
+  document.getElementById("scanInput").focus();
+  // Keep mode active for next scan — operator can scan multiple articles
+  const ind = document.getElementById("modeIndicator");
+  if(ind && currentMode){
+    const next = currentMode==="IN" ? "✅ Mode ENTRÉE — Prêt pour le prochain scan" : "📤 Mode SORTIE — Prêt pour le prochain scan";
+    ind.textContent = next;
+  }
+  showToast(action==="IN"?"Entrée : "+article.ref : "Sortie → "+machineName+" : "+article.ref, action==="IN"?"":"orange");
+  renderArmoire();
+  renderLog();
+  renderMachines();
+}
+
+function autoScan(){ doScan(); }
+
+// ── ARMOIRE VUE ──
+function renderArmoire(){
+  const grid = document.getElementById("armoireGrid");
+  if(!grid) return;
+  let html = `
+    <div class="armoire-header"></div>
+    <div class="armoire-header pos">Pos.1 (A)<br><span style="font-size:.7rem;color:var(--dim)">BAC BLEU</span></div>
+    <div class="armoire-header pos">Pos.2 (B)<br><span style="font-size:.7rem;color:var(--dim)">BAC BLEU</span></div>
+    <div class="armoire-header pos">Pos.3 (C)<br><span style="font-size:.7rem;color:var(--dim)">BAC BLEU</span></div>
+    <div class="armoire-header pos">Pos.4 (BP)<br><span style="font-size:.7rem;color:var(--gris)">BAC GRIS</span></div>
+  `;
+
+  // Build dynamic list of all NIVs present in ARTICLES_BASE
+  const displayNivs = [...new Set(ARTICLES_BASE.map(a=>a.niv))].filter(n=>n!=="NIV5");
+  for(const nivId of displayNivs){
+    const niv = getNivInfo(nivId);
+    const c = getNivColor(nivId);
+    html += `<div class="niv-label">
+      <div class="niv-name">${niv.name}</div>
+      <div class="niv-format" style="color:${c}">${niv.format}</div>
+    </div>`;
+
+    for(const pos of ["A","B","C","BP"]){
+      const arts = ARTICLES_BASE.filter(a=>a.niv===nivId && a.pos===pos);
+      if(pos==="BP"){
+        // BP cells — clickable with status like normal articles
+        let bpHtml = arts.map(a=>{
+          const status = inventory[a.code]||"IN";
+          const mac = machine[a.code]||"";
+          return `<div class="article-slot" onclick="quickScan('${a.code}')">
+            <div class="slot-ref" style="color:var(--gris)">${a.ref}</div>
+            <div class="slot-code">${a.code}</div>
+            <div><span class="slot-status ${status==="IN"?"status-in":"status-out"}">${status==="IN"?"▣ Armoire":"◻ Prod."}</span></div>
+            ${mac?`<div class="machine-tag">${mac}</div>`:""}
+          </div>`;
+        }).join('');
+        if(!bpHtml) bpHtml = `<div class="empty-slot">—</div>`;
+        html += `<div class="cell bp-cell" style="cursor:pointer;">${bpHtml}</div>`;
+      } else {
+        let slotsHtml = arts.map(a=>{
+          const status = inventory[a.code]||"IN";
+          const mac = machine[a.code]||"";
+          return `<div class="article-slot" onclick="quickScan('${a.code}')">
+            <div class="slot-ref">${a.ref}${a.extra?` <span style="color:var(--dim);font-weight:400">${a.extra}</span>`:''}</div>
+            <div class="slot-code">${a.code}</div>
+            <div><span class="slot-status ${status==="IN"?"status-in":"status-out"}">${status==="IN"?"▣ Armoire":"◻ Prod."}</span></div>
+            ${mac?`<div class="machine-tag">${mac}</div>`:""}
+          </div>`;
+        }).join('');
+        if(!slotsHtml) slotsHtml = `<div class="empty-slot">—</div>`;
+        html += `<div class="cell">${slotsHtml}</div>`;
+      }
+    }
+  }
+  grid.innerHTML = html;
+  renderLegende();
+}
+
+function quickScan(code){
+  switchTab("scan");
+  setTimeout(()=>{
+    document.getElementById("scanInput").value = code;
+    document.getElementById("scanInput").focus();
+  }, 50);
+}
+
+function renderLegende(){
+  const leg = document.getElementById("legende");
+  const items = [
+    {c:"#4fc3f7",l:"NIV 1 — 44/20 (BLEU)"},
+    {c:"#66bb6a",l:"NIV 2 — 32/20 (VERT)"},
+    {c:"#ffa726",l:"NIV 3 — 32/25 (ORANGE)"},
+    {c:"#ab47bc",l:"NIV 3 — 24 (VIOLET)"},
+    {c:"#ec407a",l:"NIV 4 — 44/25 (ROSE)"},
+    {c:"#ffee58",l:"NIV 4 — 56 (JAUNE)"},
+    {c:"#e0e0e0",l:"NIV 5 — Pièces rechange (BLANC)"},
+    {c:"#78909c",l:"BP — Bloc Poinçonnage (GRIS)"},
+  ];
+  leg.innerHTML = items.map(i=>`
+    <div style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--dim)">
+      <span style="width:12px;height:12px;border-radius:3px;background:${i.c};display:inline-block"></span>${i.l}
+    </div>`).join("");
+}
+
+// ── LOG ──
+function renderLog(){
+  const qEl = document.getElementById("filterSearch");
+  const tEl = document.getElementById("filterType");
+  const mEl = document.getElementById("filterMachine");
+  const q = qEl ? qEl.value.toLowerCase() : "";
+  const t = tEl ? tEl.value : "";
+  const m = mEl ? mEl.value : "";
+  let filtered = log.filter(e=>{
+    if(t && e.action !== t) return false;
+    if(m && e.machine !== m) return false;
+    if(q && !e.ref.toLowerCase().includes(q) && !e.code.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const tbody = document.getElementById("logBody");
+  const empty = document.getElementById("logEmpty");
+  if(!tbody) return;
+  if(!filtered.length){ tbody.innerHTML=""; if(empty) empty.style.display="block"; return; }
+  if(empty) empty.style.display="none";
+  tbody.innerHTML = filtered.map(e=>`
+    <tr>
+      <td style="color:var(--dim)">${e.ts}</td>
+      <td style="color:var(--text);font-weight:700">${e.ref}</td>
+      <td>${e.code}</td>
+      <td><span class="${e.action==="IN"?"badge-in":"badge-out"}">${e.action==="IN"?"↙ ENTRÉE":"↗ SORTIE"}</span></td>
+      <td style="color:var(--accent2);font-weight:700">${e.machine||"—"}</td>
+      <td><span style="color:${getNivColor(e.niv)}">${getNivInfo(e.niv).name||e.niv}</span></td>
+      <td style="color:var(--dim)">${e.loc}</td>
+    </tr>`).join("");
+}
+
+function clearLog(){
+  if(!confirm("Effacer tout l'historique ?")) return;
+  log = [];
+  saveState();
+  renderLog();
+}
+function clearAll(){
+  if(!confirm("Réinitialiser TOUTES les données (inventaire, entrées, sorties, historique) ?")) return;
+  inventory = {}; machine = {}; log = {}; invData = {};
+  ARTICLES_BASE.forEach(a=>{ inventory[a.code]="IN"; });
+  log = [];
+  localStorage.clear();
+  saveState();
+  updateStats();
+  renderArmoire();
+  renderMachines();
+  renderLog();
+  renderInventaire();
+  showToast("Toutes les données réinitialisées");
+}
+
+// ── QR CODES ──
+function renderQR(){
+  const f    = document.getElementById("qrFilter")?.value || "";
+  const type = document.getElementById("qrType")?.value || "articles";
+  const grid = document.getElementById("qrGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+
+  // Populate filter dynamically
+  const qrFilterEl = document.getElementById("qrFilter");
+  if(qrFilterEl && qrFilterEl.options.length <= 2){
+    const nivs = [...new Set(ARTICLES_BASE.filter(a=>!a.isBP).map(a=>a.niv))];
+    qrFilterEl.innerHTML = '<option value="">Tous les articles</option>';
+    nivs.forEach(niv=>{
+      const info = getNivInfo(niv);
+      const opt = document.createElement("option");
+      opt.value = niv;
+      opt.textContent = info.name + (info.format ? " — "+info.format : "");
+      qrFilterEl.appendChild(opt);
+    });
+    const bpOpt = document.createElement("option");
+    bpOpt.value = "BP"; bpOpt.textContent = "Blocs Poinçonnage";
+    qrFilterEl.appendChild(bpOpt);
+  }
+
+  // Deduplicate articles
+  const seen = new Set();
+  let arts = ARTICLES_BASE.filter(a=>{ if(seen.has(a.code)) return false; seen.add(a.code); return true; });
+  if(f==="BP")       arts = arts.filter(a=>a.isBP);
+  else if(f)         arts = arts.filter(a=>a.niv===f && !a.isBP);
+
+  if(type==="articles"){
+    // QR for each article
+    arts.forEach(a=>{
+      const card = document.createElement("div");
+      card.className = "qr-card";
+      const loc = getLocation(a);
+      const niv = NIVEAUX.find(n=>n.id===a.niv);
+      card.innerHTML = `
+        <div class="qr-ref">${a.isBP?"⚙ ":""}${a.ref}</div>
+        <div class="qr-code-num">${a.code}</div>
+        <div class="qr-img" id="qr-art-${a.code}"></div>
+        <div class="qr-loc">📍 ${loc}</div>
+        <div style="font-size:.7rem;color:var(--dim);margin-top:2px;">${niv.format||""}</div>
+      `;
+      grid.appendChild(card);
+      setTimeout(()=>{
+        try {
+          new QRCode(document.getElementById("qr-art-"+a.code),{
+            text:a.code, width:120, height:120,
+            colorDark:"#000000", colorLight:"#ffffff",
+            correctLevel:QRCode.CorrectLevel.M
+          });
+        } catch(e){}
+      }, 50);
+    });
+  } else {
+    // QR for each composant
+    arts.forEach(a=>{
+      const comps = getComponents(a);
+      comps.forEach(c=>{
+        const card = document.createElement("div");
+        card.className = "qr-card";
+        card.innerHTML = `
+          <div class="qr-ref" style="font-size:.85rem;">${a.ref}</div>
+          <div class="qr-code-num" style="font-size:.8rem;color:var(--text);font-weight:700;">${c.name}</div>
+          <div class="qr-code-num">${c.code}</div>
+          <div class="qr-img" id="qr-comp-${c.code}"></div>
+        `;
+        grid.appendChild(card);
+        setTimeout(()=>{
+          try {
+            new QRCode(document.getElementById("qr-comp-"+c.code),{
+              text:c.code, width:120, height:120,
+              colorDark:"#000000", colorLight:"#ffffff",
+              correctLevel:QRCode.CorrectLevel.M
+            });
+          } catch(e){}
+        }, 50);
+      });
+    });
+  }
+
+  if(grid.children.length===0){
+    grid.innerHTML=`<div style="color:var(--dim);padding:30px;text-align:center;">Aucun article trouvé.</div>`;
+  }
+}
+
+// ── MACHINES VIEW ──
+function renderMachines(){
+  const grid = document.getElementById("machinesGrid");
+  if(!grid) return;
+  const MACHINES = ["CT12/1","CT12/2","CT12/3","CT12/4"];
+  let html = "";
+
+  for(const mac of MACHINES){
+    // Get all articles currently OUT on this machine
+    const arts = ARTICLES_BASE.filter(a =>
+      inventory[a.code]==="OUT" && machine[a.code]===mac
+    );
+    // deduplicate by code (10M appears twice)
+    const seen = new Set();
+    const uniqueArts = arts.filter(a=>{ if(seen.has(a.code)) return false; seen.add(a.code); return true; });
+
+    const countClass = uniqueArts.length === 0 ? "zero" : "";
+    html += `<div class="machine-card">
+      <div class="machine-card-header">
+        <div class="machine-card-title">⚙ ${mac}</div>
+        <div class="machine-card-count ${countClass}">${uniqueArts.length}</div>
+      </div>
+      <div class="machine-card-body">`;
+
+    if(arts.length === 0){
+      html += `<div class="machine-empty">
+        <span class="empty-icon">📦</span>
+        Aucun article en production
+      </div>`;
+    } else {
+      for(const a of uniqueArts){
+        const niv = getNivInfo(a.niv);
+        const c = getNivColor(a.niv);
+        html += `<div class="machine-article-row" onclick="quickScan('${a.code}')">
+          <div class="mar-left">
+            <div class="mar-ref">${a.ref}</div>
+            <div class="mar-code">${a.code}</div>
+          </div>
+          <div class="mar-right">
+            <span class="mar-niv" style="background:${c}22;color:${c}">${niv?.name}</span>
+            ${a.extra?`<span class="mar-extra">${a.extra}</span>`:""}
+          </div>
+        </div>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ── STATS ──
+function updateStats(){
+  const all = ARTICLES_BASE.filter(a=>true);
+  const inCount = all.filter(a=>(inventory[a.code]||"IN")==="IN").length;
+  const outCount = all.length - inCount;
+  document.getElementById("statTotal").textContent = all.length;
+  document.getElementById("statIn").textContent = inCount;
+  document.getElementById("statOut").textContent = outCount;
+}
+
+// ══════════════════════════════════════
+// INVENTAIRE
+// ══════════════════════════════════════
+
+// composants par article: code -> {compCode: "bon"|"man"|"def"|null}
+let invData = {}; // { "467364-PL1": "bon", "467364-PL2": "man", ... }
+
+function getComponents(article){
+  // Si composants définis dans le JSON externe → utiliser ceux-là
+  if(article.composantsExt && article.composantsExt.length){
+    return article.composantsExt.map(c=>({
+      code: c.code,
+      name: c.name
+    }));
+  }
+  // Sinon → composants par défaut
+  if(article.isBP){
+    return [
+      { code: article.code+"-VER", name: "Vérin dédié" },
+      { code: article.code+"-BLK", name: "Bloc poinçonnage" },
+      { code: article.code+"-CBP", name: "Cale BP" },
+    ];
+  } else {
+    return [
+      { code: article.code+"-PL1", name: "Plaque chauffante 1" },
+      { code: article.code+"-PL2", name: "Plaque chauffante 2" },
+      { code: article.code+"-MO1", name: "Pièce moule 1" },
+      { code: article.code+"-MO2", name: "Pièce moule 2" },
+      { code: article.code+"-CAL", name: "Cale moule" },
+    ];
+  }
+}
+
+function getArticleStatus(article){
+  const comps = getComponents(article);
+  const statuses = comps.map(c=>invData[c.code]||null);
+  if(statuses.every(s=>s===null)) return "pending";
+  if(statuses.every(s=>s==="bon")) return "bon";
+  return "incomplet";
+}
+
+function setComp(compCode, val){
+  invData[compCode] = val;
+  localStorage.setItem("mulh_inv_comp", JSON.stringify(invData));
+  renderInventaire();
+}
+
+function resetInventaire(){
+  if(!confirm("Réinitialiser tout l'inventaire ?")) return;
+  invData = {};
+  localStorage.removeItem("mulh_inv_comp");
+  renderInventaire();
+}
+
+function exportInventaire(){
+  const lines = ["RAPPORT INVENTAIRE — " + new Date().toLocaleString("fr-FR"), ""];
+  // deduplicated articles
+  const seen = new Set();
+  const arts = ARTICLES_BASE.filter(a=>{ if(seen.has(a.code)) return false; seen.add(a.code); return true; });
+  for(const a of arts){
+    const comps = getComponents(a);
+    const status = getArticleStatus(a);
+    lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    lines.push(`${a.ref} (${a.code}) — ${status.toUpperCase()}`);
+    for(const c of comps){
+      const s = invData[c.code]||"NON VÉRIFIÉ";
+      lines.push(`  ${c.name}: ${s.toUpperCase()}`);
+    }
+  }
+  const blob = new Blob([lines.join("\n")], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download="inventaire-mulhbauer.txt"; a.click();
+}
+
+function renderInventaire(){
+  const saved = localStorage.getItem("mulh_inv_comp");
+  if(saved && Object.keys(invData).length===0) invData = JSON.parse(saved);
+
+  // Populate invFilter dynamically from ARTICLES_BASE
+  const invFilterEl = document.getElementById("invFilter");
+  if(invFilterEl && invFilterEl.options.length <= 2){
+    const nivs = [...new Set(ARTICLES_BASE.filter(a=>!a.isBP).map(a=>a.niv))];
+    // Clear and rebuild
+    invFilterEl.innerHTML = '<option value="">Tous les articles</option>';
+    nivs.forEach(niv=>{
+      const info = getNivInfo(niv);
+      const opt = document.createElement("option");
+      opt.value = niv;
+      opt.textContent = info.name + (info.format ? " — "+info.format : "");
+      invFilterEl.appendChild(opt);
+    });
+    const bpOpt = document.createElement("option");
+    bpOpt.value = "BP"; bpOpt.textContent = "Blocs Poinçonnage";
+    invFilterEl.appendChild(bpOpt);
+  }
+
+  const f  = document.getElementById("invFilter")?.value||"";
+  const sf = document.getElementById("invStatusFilter")?.value||"";
+
+  // deduplicated articles
+  const seen = new Set();
+  let arts = ARTICLES_BASE.filter(a=>{ if(seen.has(a.code)) return false; seen.add(a.code); return true; });
+
+  if(f==="BP")       arts = arts.filter(a=>a.isBP);
+  else if(f)         arts = arts.filter(a=>a.niv===f && !a.isBP);
+  if(sf)             arts = arts.filter(a=>getArticleStatus(a)===sf);
+
+  // Summary
+  const allSeen = new Set();
+  const allArts = ARTICLES_BASE.filter(a=>{ if(allSeen.has(a.code)) return false; allSeen.add(a.code); return true; });
+  const total    = allArts.length;
+  const bonCount = allArts.filter(a=>getArticleStatus(a)==="bon").length;
+  const incCount = allArts.filter(a=>getArticleStatus(a)==="incomplet").length;
+  const pendCount= allArts.filter(a=>getArticleStatus(a)==="pending").length;
+
+  const sumDiv = document.getElementById("invSummary");
+  if(sumDiv) sumDiv.innerHTML = `
+    <div class="inv-sum-box"><div class="n" style="color:var(--accent)">${total}</div><div class="l">Total</div></div>
+    <div class="inv-sum-box"><div class="n" style="color:var(--green)">${bonCount}</div><div class="l">✅ Bon</div></div>
+    <div class="inv-sum-box"><div class="n" style="color:var(--accent2)">${incCount}</div><div class="l">⚠ Incomplet</div></div>
+    <div class="inv-sum-box"><div class="n" style="color:var(--dim)">${pendCount}</div><div class="l">Non vérifié</div></div>
+  `;
+
+  const grid = document.getElementById("invGrid");
+  if(!grid) return;
+
+  grid.innerHTML = arts.map(article=>{
+    const comps  = getComponents(article);
+    const status = getArticleStatus(article);
+    const niv    = getNivInfo(article.niv);
+    const c      = getNivColor(article.niv);
+
+    const compRows = comps.map(comp=>{
+      const s = invData[comp.code]||null;
+      return `<div class="comp-row">
+        <div>
+          <div class="comp-name">${comp.name}</div>
+          <div class="comp-code">${comp.code}</div>
+        </div>
+        <div class="comp-btns">
+          <button class="comp-btn bon ${s==="bon"?"sel":""}"
+            onclick="setComp('${comp.code}','bon')">✅ Bon</button>
+          <button class="comp-btn man ${s==="man"?"sel":""}"
+            onclick="setComp('${comp.code}','man')">❌ Manquant</button>
+          <button class="comp-btn def ${s==="def"?"sel":""}"
+            onclick="setComp('${comp.code}','def')">⚠ Défectueux</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    const statusBadge = status==="bon"
+      ? `<span class="inv-status-badge badge-bon">✅ Bon</span>`
+      : status==="incomplet"
+      ? `<span class="inv-status-badge badge-incomplet">⚠ Incomplet</span>`
+      : `<span class="inv-status-badge badge-pending">— Non vérifié</span>`;
+
+    return `<div class="inv-card ${status}">
+      <div class="inv-card-header">
+        <div>
+          <div class="inv-card-title">
+            <span style="color:${c}">●</span>
+            ${article.isBP?"⚙ ":""}${article.ref}
+          </div>
+          <div class="inv-card-code">${article.code} — ${niv?.name||""} ${niv?.format||""}</div>
+        </div>
+        ${statusBadge}
+      </div>
+      <div class="inv-components">${compRows}</div>
+    </div>`;
+  }).join("");
+
+  if(arts.length===0){
+    grid.innerHTML = `<div style="text-align:center;color:var(--dim);padding:40px;grid-column:1/-1;">Aucun article pour ce filtre.</div>`;
+  }
+}
+
+// ══════════════════════════════════════
+// RFB — Règles de Fiche de Bon
+// ══════════════════════════════════════
+// Pour activer le PDF, remplacez RFB_PDF_URL par le chemin de votre fichier
+const RFB_PDF_URL = ""; // ex: "RFB.pdf" ou URL complète
+
+function openRFB(){
+  document.getElementById("rfbOverlay").classList.add("visible");
+  if(RFB_PDF_URL){
+    document.getElementById("rfbIframe").src = RFB_PDF_URL;
+    document.getElementById("rfbContent").style.display = "block";
+    document.getElementById("rfbPlaceholder").style.display = "none";
+  } else {
+    document.getElementById("rfbContent").style.display = "none";
+    document.getElementById("rfbPlaceholder").style.display = "flex";
+  }
+}
+
+function closeRFB(){
+  document.getElementById("rfbOverlay").classList.remove("visible");
+  document.getElementById("rfbIframe").src = "";
+}
+
+// Fermer avec Escape
+document.addEventListener("keydown", e=>{
+  if(e.key==="Escape") closeRFB();
+});
+
+// ══════════════════════════════════════
+// EXPORT EXCEL
+// ══════════════════════════════════════
+function exportExcel(){
+  if(typeof XLSX === "undefined"){
+    showToast("Librairie Excel non disponible — connexion internet requise","orange");
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const now = new Date().toLocaleString("fr-FR");
+
+  // ── 1. Historique Mouvements ──
+  const logHeaders = ["Date / Heure","Référence","Code Article","Mouvement","Machine CT12","Niveau","Emplacement"];
+  const logRows = log.map(e=>[
+    e.ts, e.ref, e.code,
+    e.action==="IN"?"ENTRÉE":"SORTIE",
+    e.machine||"—",
+    e.niv||"",
+    e.loc||""
+  ]);
+  const ws1Data = [
+    [`HISTORIQUE DES MOUVEMENTS — Export du ${now}`],
+    [],
+    logHeaders,
+    ...logRows
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+  ws1["!cols"] = [20,18,16,12,14,10,28].map(w=>({wch:w}));
+  ws1["!merges"] = [{s:{r:0,c:0},e:{r:0,c:6}}];
+  XLSX.utils.book_append_sheet(wb, ws1, "Historique Mouvements");
+
+  // ── 2. État Armoire ──
+  const armHeaders = ["Référence","Code","Niveau","Format","Position","Statut","Machine CT12"];
+  const seen = new Set();
+  const arts = ARTICLES_BASE.filter(a=>{ if(seen.has(a.code)) return false; seen.add(a.code); return true; });
+  const armRows = arts.map(a=>{
+    const niv = NIVEAUX.find(n=>n.id===a.niv);
+    const pos = a.pos==="A"?"POS 1 (A)":a.pos==="B"?"POS 2 (B)":a.pos==="C"?"POS 3 (C)":"POS 4 (BP)";
+    const status = inventory[a.code]==="OUT"?"EN PRODUCTION":"EN ARMOIRE";
+    const mac = machine[a.code]||"—";
+    return [a.ref, a.code, niv?.name||"", niv?.format||"", pos, status, mac];
+  });
+  const ws2Data = [
+    [`ÉTAT ARMOIRE — Export du ${now}`],
+    [],
+    armHeaders,
+    ...armRows
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  ws2["!cols"] = [18,14,10,10,14,16,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws2, "État Armoire");
+
+  // ── 3. Machines CT12 ──
+  const macHeaders = ["Machine","Référence","Code","Niveau","Format"];
+  const macRows = [];
+  ["CT12/1","CT12/2","CT12/3","CT12/4"].forEach(mac=>{
+    const outArts = ARTICLES_BASE.filter(a=>
+      inventory[a.code]==="OUT" && machine[a.code]===mac
+    );
+    const seenM = new Set();
+    const unique = outArts.filter(a=>{ if(seenM.has(a.code)) return false; seenM.add(a.code); return true; });
+    if(unique.length===0){
+      macRows.push([mac,"—","—","—","—"]);
+    } else {
+      unique.forEach(a=>{
+        const niv = getNivInfo(a.niv);
+        macRows.push([mac, a.ref, a.code, niv?.name||"", niv?.format||""]);
+      });
+    }
+  });
+  const ws3Data = [
+    [`MACHINES CT12 — Export du ${now}`],
+    [],
+    macHeaders,
+    ...macRows
+  ];
+  const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+  ws3["!cols"] = [12,18,14,10,10].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws3, "Machines CT12");
+
+  // ── 4. Inventaire Composants ──
+  const invHeaders = ["Article","Code Article","Composant","Code Composant","Type","Statut","Date vérification"];
+  const invRows = [];
+  const seenI = new Set();
+  ARTICLES_BASE.filter(a=>{ if(seenI.has(a.code)) return false; seenI.add(a.code); return true; })
+  .forEach(a=>{
+    getComponents(a).forEach(c=>{
+      const s = invData[c.code]||"NON VÉRIFIÉ";
+      const statusLabel = s==="bon"?"BON":s==="man"?"MANQUANT":s==="def"?"DÉFECTUEUX":"NON VÉRIFIÉ";
+      invRows.push([a.ref, a.code, c.name, c.code, a.isBP?"BP":"Article", statusLabel, ""]);
+    });
+  });
+  const ws4Data = [
+    [`INVENTAIRE COMPOSANTS — Export du ${now}`],
+    [],
+    invHeaders,
+    ...invRows
+  ];
+  const ws4 = XLSX.utils.aoa_to_sheet(ws4Data);
+  ws4["!cols"] = [16,14,22,18,10,16,18].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws4, "Inventaire Composants");
+
+  // ── Download ──
+  const date = new Date().toLocaleDateString("fr-FR").replace(/\//g,"-");
+  XLSX.writeFile(wb, `Armoire-Mulhbauer-${date}.xlsx`);
+  showToast("✅ Export Excel téléchargé avec succès");
+}
+
+// ── RFB ──
+
+// ── TABS ──
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach((t,i)=>{
+    const names=["scan","armoire","machines","inventaire","log","qr"];
+    t.classList.toggle("active", names[i]===name);
+  });
+  document.querySelectorAll(".view").forEach(v=>{
+    v.classList.toggle("active", v.id==="view-"+name);
+  });
+  if(name==="armoire")    renderArmoire();
+  if(name==="machines")   renderMachines();
+  if(name==="inventaire") renderInventaire();
+  if(name==="log")        renderLog();
+  if(name==="qr")         renderQR();
+}
+
+// ── TOAST ──
+function showToast(msg, type=""){
+  const t = document.createElement("div");
+  t.className = "toast" + (type==="red"||type==="orange" ? " red" : "");
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3000);
+}
+
+// ══════════════════════════════════════
+// BOOT — charge articles.json en premier
+// ══════════════════════════════════════
+async function boot(){
+  // 1. Essayer de charger articles.json
+  try {
+    const resp = await fetch("articles.json");
+    if(resp.ok){
+      const data = await resp.json();
+      if(data.articles && data.articles.length){
+        // Remplacer ARTICLES_BASE par la liste externe
+        ARTICLES_BASE.length = 0;
+        data.articles.forEach(a=>{
+          ARTICLES_BASE.push({
+            ref:          a.ref,
+            code:         a.code,
+            niv:          a.niv,
+            pos:          a.pos,
+            extra:        a.extra||"",
+            isBP:         a.isBP||false,
+            desc:         a.desc||"",
+            composantsExt: a.composants||[]
+          });
+        });
+        console.log("✅ articles.json chargé —", data.articles.length, "articles");
+      }
+    }
+  } catch(e){
+    console.log("articles.json non trouvé — données intégrées utilisées");
+  }
+
+  // 2. Initialiser l'état (après chargement JSON)
+  initState();
+  updateStats();
+  document.getElementById("scanInput").focus();
+}
+
+// Lancer le boot
+boot();
+</script>
+
+<style>
+#passwordScreen {
+  position: fixed;
+  inset: 0;
+  background: #0a0c10;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pw-box {
+  background: #111318;
+  border: 2px solid #00e5ff;
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  width: 340px;
+  animation: slideIn .3s ease;
+}
+.pw-logo { font-size: 3rem; margin-bottom: 16px; }
+.pw-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.6rem; font-weight: 900;
+  color: #00e5ff; letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 6px;
+}
+.pw-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .9rem; color: #5a6070;
+  margin-bottom: 28px;
+}
+.pw-input {
+  width: 100%;
+  background: #0a0c10;
+  border: 2px solid #1e2330;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 1.4rem;
+  color: #c8d0e0;
+  text-align: center;
+  letter-spacing: 8px;
+  outline: none;
+  margin-bottom: 16px;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+.pw-input:focus { border-color: #00e5ff; }
+.pw-btn {
+  width: 100%;
+  padding: 14px;
+  background: #00e5ff;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.pw-btn:hover { filter: brightness(1.1); }
+.pw-error {
+  color: #ff6b35;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .9rem; margin-top: 12px;
+  display: none;
+}
+.pw-attempts {
+  color: #5a6070;
+  font-family: 'Space Mono', monospace;
+  font-size: .75rem; margin-top: 10px;
+}
+</style>
+
+<div id="passwordScreen">
+  <div class="pw-box">
+    <div class="pw-logo">⚙</div>
+    <div class="pw-title">Armoire Mulhbauer</div>
+    <div class="pw-sub">Accès sécurisé — Entrez votre code</div>
+    <input type="password" class="pw-input" id="pwInput" maxlength="10"
+           placeholder="••••"
+           onkeydown="if(event.key==='Enter') checkPassword()" />
+    <button class="pw-btn" onclick="checkPassword()">🔓 Accéder</button>
+    <div class="pw-error" id="pwError">❌ Code incorrect — Réessayez</div>
+    <div class="pw-attempts" id="pwAttempts"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Hash simple du mot de passe
+  const HASH = "5a968bff00022cce000000d3";  // md5("9280")
+
+  // Check si déjà authentifié dans cette session
+  if(sessionStorage.getItem("mulh_auth")==="1"){
+    document.getElementById("passwordScreen").style.display="none";
+  }
+
+  let attempts = 0;
+  window.checkPassword = function(){
+    const val = document.getElementById("pwInput").value;
+    // Simple hash check
+    if(simpleHash(val) === HASH){
+      sessionStorage.setItem("mulh_auth","1");
+      const screen = document.getElementById("passwordScreen");
+      screen.style.transition = "opacity .4s";
+      screen.style.opacity = "0";
+      setTimeout(()=>screen.style.display="none", 400);
+    } else {
+      attempts++;
+      document.getElementById("pwError").style.display="block";
+      document.getElementById("pwInput").value="";
+      document.getElementById("pwInput").focus();
+      if(attempts>=3){
+        document.getElementById("pwAttempts").textContent =
+          attempts + " tentative(s) incorrecte(s)";
+      }
+      // Shake animation
+      const box = document.querySelector(".pw-box");
+      box.style.transform="translateX(-8px)";
+      setTimeout(()=>box.style.transform="translateX(8px)",80);
+      setTimeout(()=>box.style.transform="translateX(0)",160);
+    }
+  };
+
+  function simpleHash(str){
+    // MD5-like simple hash for browser
+    let hash = 0;
+    const full = str + "mulh_salt_2024";
+    for(let i=0;i<full.length;i++){
+      const c = full.charCodeAt(i);
+      hash = ((hash<<5)-hash)+c;
+      hash = hash & hash;
+    }
+    // Convert to hex-like string
+    return Math.abs(hash).toString(16).padStart(8,"0") +
+           (full.length * 7919).toString(16).padStart(8,"0") +
+           str.split("").reduce((a,c)=>a+c.charCodeAt(0),0).toString(16).padStart(8,"0");
+  }
+})();
+</script>
+</body>
+</html>
