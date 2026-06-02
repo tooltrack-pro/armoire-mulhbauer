@@ -2153,6 +2153,13 @@ boot();
            (full.length * 7919).toString(16).padStart(8,"0") +
            str.split("").reduce((a,c)=>a+c.charCodeAt(0),0).toString(16).padStart(8,"0");
   }
+  document.addEventListener("DOMContentLoaded", () => {
+  const firstView = document.querySelector(".view");
+  if (firstView) firstView.classList.add("active");
+
+  const firstTab = document.querySelector(".tab");
+  if (firstTab) firstTab.classList.add("active");
+});
 })();
 </script>
 </body>
