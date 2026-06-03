@@ -617,7 +617,9 @@
     background: var(--panel);
     border: 2px solid var(--accent);
     border-radius: 16px;
-    width: 90%; max-width: 860px;
+   @media (max-width: 900px) {
+  .machines-grid { grid-template-columns: repeat(2, 1fr); }
+}
     max-height: 92vh;
     display: flex; flex-direction: column;
     animation: slideIn .25s ease;
@@ -643,7 +645,7 @@
     padding: 8px 14px; font-family: 'Barlow Condensed',sans-serif;
     font-size: 1rem; cursor: pointer; transition: all .15s;
   }
-  .rfb-close:hover { border-color: var(--red2); color: #ff6b6b; }
+  .rfb-close:hover { border-color: var(--accent2); color: #ff6b6b; }
   .rfb-body {
     flex: 1; overflow: hidden;
     display: flex; flex-direction: column;
@@ -658,7 +660,6 @@
   min-height: 500px;
   border: none;
 }
-  }
   .rfb-placeholder {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -873,14 +874,16 @@
     </div>
     <div class="rfb-body">
       <div id="rfbContent" class="rfb-pdf-container" style="display:none;">
-         <iframe id="rfbIframe" src="./RFB.pdf" title="RFB Document"></iframe>
+         <iframe id="rfbIframe" src="" title="RFB Document"></iframe>
       </div>
-      <div class="rfb-placeholder" id="rfbPlaceholder">
-         <div class="ph-icon">📄</div>
-        <div class="ph-sub">
-    </div>
+<div class="rfb-placeholder" id="rfbPlaceholder">
+  <div class="ph-icon">📄</div>
+  <div class="ph-title">Aucun PDF chargé</div>
+  <div class="ph-sub">Le document RFB n’est pas encore disponible.</div>
+</div>
      </div>
     </div>
+          </div>
 
 <!-- ══════════ SCANNER ══════════ -->
 <div id="view-scan" class="view active">
@@ -1798,7 +1801,7 @@ function renderInventaire(){
 // RFB — Règles de Fiche de Bon
 // ══════════════════════════════════════
 // Pour activer le PDF, remplacez RFB_PDF_URL par le chemin de votre fichier
-const RFB_PDF_URL = "https://github.com/tooltrack-pro/armoire-mulhbauer/blob/main/RFB.pdf"; // ex: "RFB.pdf" ou URL complète
+const RFB_PDF_URL = ""; // ex: "RFB.pdf" ou URL complète
 
 function openRFB(){
   document.getElementById("rfbOverlay").classList.add("visible");
@@ -1815,20 +1818,6 @@ function openRFB(){
 function closeRFB(){
   document.getElementById("rfbOverlay").classList.remove("visible");
   document.getElementById("rfbIframe").src = "";
-}
-  function openRFB(){
-  document.getElementById("rfbOverlay").classList.add("visible");
-
-  if(RFB_PDF_URL){
-    const iframe = document.getElementById("rfbIframe");
-    iframe.src = RFB_PDF_URL;
-
-    document.getElementById("rfbContent").style.display = "block";
-    document.getElementById("rfbPlaceholder").style.display = "none";
-  } else {
-    document.getElementById("rfbContent").style.display = "none";
-    document.getElementById("rfbPlaceholder").style.display = "flex";
-  }
 }
 
 // Fermer avec Escape
