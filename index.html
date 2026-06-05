@@ -366,6 +366,117 @@
     display: inline-block; margin-right: 6px;
   }
 
+  /* ── COMPOSANT SCAN FLOW ── */
+  #compScanZone {
+    display: none;
+    margin-top: 16px;
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    overflow: hidden;
+    animation: slideIn .25s ease;
+  }
+  .comp-scan-header {
+    background: rgba(0,229,255,.08);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .comp-scan-title {
+    font-size: 1.2rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 1px; text-transform: uppercase;
+  }
+  .comp-scan-progress {
+    font-family: 'Space Mono', monospace;
+    font-size: .9rem; color: var(--dim);
+  }
+  .comp-scan-body { padding: 20px; }
+  .comp-current {
+    background: var(--bg);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .comp-current-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .comp-current-name {
+    font-size: 1.4rem; font-weight: 900;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .comp-current-code {
+    font-family: 'Space Mono', monospace;
+    font-size: .85rem; color: var(--dim); margin-bottom: 16px;
+  }
+  .comp-scan-input-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .comp-scan-input-row input {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem; color: var(--text);
+    outline: none; transition: border-color .2s;
+  }
+  .comp-scan-input-row input:focus { border-color: var(--accent); }
+  .comp-state-btns {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+    margin-bottom: 14px;
+  }
+  .comp-state-btn {
+    padding: 14px 8px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; text-align: center;
+    transition: all .15s; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--dim);
+  }
+  .comp-state-btn:hover { transform: translateY(-2px); }
+  .comp-state-btn.bon:hover, .comp-state-btn.bon.selected {
+    border-color: var(--green); background: rgba(0,255,136,.12); color: var(--green);
+  }
+  .comp-state-btn.man:hover, .comp-state-btn.man.selected {
+    border-color: var(--accent2); background: rgba(255,107,53,.12); color: var(--accent2);
+  }
+  .comp-state-btn.def:hover, .comp-state-btn.def.selected {
+    border-color: #ffd700; background: rgba(255,215,0,.12); color: #ffd700;
+  }
+  .comp-state-btn .csb-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+  .comp-progress-list {
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 180px; overflow-y: auto;
+  }
+  .comp-prog-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 14px;
+    font-size: .88rem;
+  }
+  .comp-prog-item.done-bon  { border-color: var(--green); }
+  .comp-prog-item.done-man  { border-color: var(--accent2); }
+  .comp-prog-item.done-def  { border-color: #ffd700; }
+  .comp-prog-item.pending   { opacity: .5; }
+  .comp-prog-name { color: var(--text); font-weight: 700; }
+  .comp-prog-badge {
+    font-size: .75rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 20px; text-transform: uppercase;
+  }
+  .badge-bon2  { background: rgba(0,255,136,.15); color: var(--green); }
+  .badge-man2  { background: rgba(255,107,53,.15); color: var(--accent2); }
+  .badge-def2  { background: rgba(255,215,0,.15);  color: #ffd700; }
+  .badge-pend2 { background: rgba(255,255,255,.05); color: var(--dim); }
+  .comp-scan-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+
   /* ── MACHINE SELECTOR ── */
   .machine-selector {
     display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
@@ -465,7 +576,132 @@
   }
   .modal-cancel:hover { border-color: var(--accent2); color: var(--accent2); }
 
-  /* ── RFB MODAL ── */
+  /* ── COMPOSANTS SCAN MODAL ── */
+  #compScanOverlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.88);
+    z-index: 600;
+    align-items: center;
+    justify-content: center;
+  }
+  #compScanOverlay.visible { display: flex; }
+  .comp-scan-box {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    width: 92%; max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideIn .25s ease;
+  }
+  .comp-scan-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--panel);
+    z-index: 1;
+  }
+  .comp-scan-title {
+    font-size: 1.2rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .comp-scan-article {
+    font-size: .9rem; color: var(--text); font-family: "Space Mono",monospace;
+  }
+  .comp-scan-progress {
+    margin-top: 10px;
+    background: var(--border); border-radius: 10px; height: 6px; overflow: hidden;
+  }
+  .comp-scan-progress-bar {
+    background: var(--accent); height: 100%;
+    border-radius: 10px; transition: width .3s ease;
+  }
+  .comp-scan-progress-label {
+    font-size: .75rem; color: var(--dim); margin-top: 4px;
+    font-family: "Space Mono",monospace;
+  }
+  .comp-scan-body { padding: 20px 24px; }
+  .comp-current {
+    background: rgba(0,229,255,.06);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .comp-current-label {
+    font-size: .8rem; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .comp-current-name {
+    font-size: 1.4rem; font-weight: 900; color: var(--text); margin-bottom: 4px;
+  }
+  .comp-current-code {
+    font-family: "Space Mono",monospace; font-size: .85rem; color: var(--dim);
+    margin-bottom: 16px;
+  }
+  .comp-scan-input-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .comp-scan-input-row input {
+    flex: 1;
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    font-family: "Space Mono",monospace; font-size: 1rem;
+    color: var(--text); outline: none; transition: border-color .2s;
+  }
+  .comp-scan-input-row input:focus { border-color: var(--accent); }
+  .comp-state-btns {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .comp-state-btn {
+    padding: 14px 10px;
+    border-radius: 10px; border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: "Barlow Condensed",sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; text-align: center;
+    transition: all .15s; text-transform: uppercase;
+  }
+  .comp-state-btn.bon  { border-color: var(--green); color: var(--green); }
+  .comp-state-btn.bon:hover, .comp-state-btn.bon.sel  { background: var(--green); color: #000; }
+  .comp-state-btn.man  { border-color: var(--accent2); color: var(--accent2); }
+  .comp-state-btn.man:hover, .comp-state-btn.man.sel  { background: var(--accent2); color: #000; }
+  .comp-state-btn.def  { border-color: #ffcc00; color: #ffcc00; }
+  .comp-state-btn.def:hover, .comp-state-btn.def.sel  { background: #ffcc00; color: #000; }
+  .comp-scan-hint {
+    font-size: .8rem; color: var(--dim); text-align: center; margin-bottom: 10px;
+  }
+  .comp-done-list {
+    border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;
+  }
+  .comp-done-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px; border-radius: 8px;
+    background: var(--bg); margin-bottom: 6px;
+    font-size: .85rem;
+  }
+  .comp-done-name { color: var(--text); }
+  .comp-done-badge {
+    font-size: .72rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 20px; text-transform: uppercase;
+  }
+  .badge-bon-s  { background: rgba(0,255,136,.15); color: var(--green); }
+  .badge-man-s  { background: rgba(255,107,53,.15); color: var(--accent2); }
+  .badge-def-s  { background: rgba(255,204,0,.15); color: #ffcc00; }
+  .comp-skip-btn {
+    width: 100%; padding: 10px; margin-top: 8px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--dim);
+    font-family: "Barlow Condensed",sans-serif; font-size: .9rem;
+    cursor: pointer; transition: all .15s;
+  }
+  .comp-skip-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── RFB MODAL ── */  /* ── RFB MODAL ── */
   .rfb-overlay {
     display: none;
     position: fixed; inset: 0;
@@ -603,7 +839,125 @@
   }
   .machine-empty .empty-icon { font-size: 2rem; display: block; margin-bottom: 8px; opacity: .4; }
 
-  /* ── RFB MODAL ── */
+  /* ── COMPOSANTS SCAN MODAL ── */
+
+  #compScanOverlay.visible { display: flex; }
+  .comp-scan-box {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    width: 92%; max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideIn .25s ease;
+  }
+  .comp-scan-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--panel);
+    z-index: 1;
+  }
+  .comp-scan-title {
+    font-size: 1.2rem; font-weight: 900;
+    color: var(--accent); letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .comp-scan-article {
+    font-size: .9rem; color: var(--text); font-family: "Space Mono",monospace;
+  }
+  .comp-scan-progress {
+    margin-top: 10px;
+    background: var(--border); border-radius: 10px; height: 6px; overflow: hidden;
+  }
+  .comp-scan-progress-bar {
+    background: var(--accent); height: 100%;
+    border-radius: 10px; transition: width .3s ease;
+  }
+  .comp-scan-progress-label {
+    font-size: .75rem; color: var(--dim); margin-top: 4px;
+    font-family: "Space Mono",monospace;
+  }
+  .comp-scan-body { padding: 20px 24px; }
+  .comp-current {
+    background: rgba(0,229,255,.06);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .comp-current-label {
+    font-size: .8rem; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .comp-current-name {
+    font-size: 1.4rem; font-weight: 900; color: var(--text); margin-bottom: 4px;
+  }
+  .comp-current-code {
+    font-family: "Space Mono",monospace; font-size: .85rem; color: var(--dim);
+    margin-bottom: 16px;
+  }
+  .comp-scan-input-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .comp-scan-input-row input {
+    flex: 1;
+    background: var(--bg); border: 2px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    font-family: "Space Mono",monospace; font-size: 1rem;
+    color: var(--text); outline: none; transition: border-color .2s;
+  }
+  .comp-scan-input-row input:focus { border-color: var(--accent); }
+  .comp-state-btns {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .comp-state-btn {
+    padding: 14px 10px;
+    border-radius: 10px; border: 2px solid var(--border);
+    background: var(--bg);
+    font-family: "Barlow Condensed",sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 1px;
+    cursor: pointer; text-align: center;
+    transition: all .15s; text-transform: uppercase;
+  }
+  .comp-state-btn.bon  { border-color: var(--green); color: var(--green); }
+  .comp-state-btn.bon:hover, .comp-state-btn.bon.sel  { background: var(--green); color: #000; }
+  .comp-state-btn.man  { border-color: var(--accent2); color: var(--accent2); }
+  .comp-state-btn.man:hover, .comp-state-btn.man.sel  { background: var(--accent2); color: #000; }
+  .comp-state-btn.def  { border-color: #ffcc00; color: #ffcc00; }
+  .comp-state-btn.def:hover, .comp-state-btn.def.sel  { background: #ffcc00; color: #000; }
+  .comp-scan-hint {
+    font-size: .8rem; color: var(--dim); text-align: center; margin-bottom: 10px;
+  }
+  .comp-done-list {
+    border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;
+  }
+  .comp-done-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px; border-radius: 8px;
+    background: var(--bg); margin-bottom: 6px;
+    font-size: .85rem;
+  }
+  .comp-done-name { color: var(--text); }
+  .comp-done-badge {
+    font-size: .72rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 20px; text-transform: uppercase;
+  }
+  .badge-bon-s  { background: rgba(0,255,136,.15); color: var(--green); }
+  .badge-man-s  { background: rgba(255,107,53,.15); color: var(--accent2); }
+  .badge-def-s  { background: rgba(255,204,0,.15); color: #ffcc00; }
+  .comp-skip-btn {
+    width: 100%; padding: 10px; margin-top: 8px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--dim);
+    font-family: "Barlow Condensed",sans-serif; font-size: .9rem;
+    cursor: pointer; transition: all .15s;
+  }
+  .comp-skip-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── RFB MODAL ── */  /* ── RFB MODAL ── */
   #rfbOverlay {
     display: none;
     position: fixed; inset: 0;
@@ -617,9 +971,7 @@
     background: var(--panel);
     border: 2px solid var(--accent);
     border-radius: 16px;
-   @media (max-width: 900px) {
-  .machines-grid { grid-template-columns: repeat(2, 1fr); }
-}
+    width: 90%; max-width: 860px;
     max-height: 92vh;
     display: flex; flex-direction: column;
     animation: slideIn .25s ease;
@@ -645,7 +997,7 @@
     padding: 8px 14px; font-family: 'Barlow Condensed',sans-serif;
     font-size: 1rem; cursor: pointer; transition: all .15s;
   }
-  .rfb-close:hover { border-color: var(--accent2); color: #ff6b6b; }
+  .rfb-close:hover { border-color: var(--red2); color: #ff6b6b; }
   .rfb-body {
     flex: 1; overflow: hidden;
     display: flex; flex-direction: column;
@@ -654,12 +1006,10 @@
     flex: 1; background: #fff;
     min-height: 500px;
   }
-.rfb-pdf-container iframe {
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-  border: none;
-}
+  .rfb-pdf-container iframe {
+    width: 100%; height: 100%; min-height: 500px;
+    border: none;
+  }
   .rfb-placeholder {
     flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -702,19 +1052,7 @@
   }
 
   /* RFB link in entry result */
-  .rfb-link {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0,229,255,.1);
-    border: 2px solid var(--accent);
-    border-radius: 10px;
-    padding: 12px 20px;
-    font-family: 'Barlow Condensed',sans-serif;
-    font-size: 1.1rem; font-weight: 700;
-    color: var(--accent); cursor: pointer;
-    letter-spacing: 1px; text-transform: uppercase;
-    transition: all .2s; margin-top: 12px;
-    animation: pulse 2s infinite;
-  }
+
   .rfb-link:hover {
     background: rgba(0,229,255,.2);
     transform: scale(1.02);
@@ -833,6 +1171,43 @@
   <div class="tab" onclick="switchTab('qr')">🔲 Codes QR</div>
 </div>
 
+<!-- ══════════ MODAL SCAN COMPOSANTS ══════════ -->
+<div id="compScanOverlay">
+  <div class="comp-scan-box">
+    <div class="comp-scan-header">
+      <div class="comp-scan-title" id="compScanTitle">Vérification des composants</div>
+      <div class="comp-scan-article" id="compScanArticle"></div>
+      <div class="comp-scan-progress">
+        <div class="comp-scan-progress-bar" id="compProgressBar" style="width:0%"></div>
+      </div>
+      <div class="comp-scan-progress-label" id="compProgressLabel">Composant 0 / 0</div>
+    </div>
+    <div class="comp-scan-body">
+      <!-- Composant courant -->
+      <div class="comp-current">
+        <div class="comp-current-label">📦 Composant à vérifier</div>
+        <div class="comp-current-name" id="compCurrentName"></div>
+        <div class="comp-current-code" id="compCurrentCode"></div>
+        <div class="comp-scan-input-row">
+          <input type="text" id="compScanInput"
+                 placeholder="Scannez le QR du composant..."
+                 onkeydown="if(event.key==='Enter') validateCompScan()" />
+          <button class="btn btn-primary" onclick="validateCompScan()" style="white-space:nowrap">✔ OK</button>
+        </div>
+        <div class="comp-scan-hint">ou choisissez directement l'état ↓</div>
+        <div class="comp-state-btns">
+          <button class="comp-state-btn bon" onclick="selectCompState('bon')">✅ Bon</button>
+          <button class="comp-state-btn man" onclick="selectCompState('man')">❌ Manquant</button>
+          <button class="comp-state-btn def" onclick="selectCompState('def')">⚠ Défectueux</button>
+        </div>
+      </div>
+      <!-- Composants déjà vérifiés -->
+      <div class="comp-done-list" id="compDoneList"></div>
+      <button class="comp-skip-btn" onclick="skipAllComps()">⏭ Passer tous les composants restants (Bon)</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ MODAL RFB ══════════ -->
 
 <!-- ══════════ MODAL MACHINE ══════════ -->
@@ -859,6 +1234,8 @@
   </div>
 </div>
 
+<!-- ══════════ MODAL SCAN COMPOSANTS ══════════ -->
+
 <!-- ══════════ MODAL RFB ══════════ -->
 <div id="rfbOverlay">
   <div class="rfb-box">
@@ -874,16 +1251,29 @@
     </div>
     <div class="rfb-body">
       <div id="rfbContent" class="rfb-pdf-container" style="display:none;">
-         <iframe id="rfbIframe" src="" title="RFB Document"></iframe>
+        <iframe id="rfbIframe" src="" title="RFB Document"></iframe>
       </div>
-<div class="rfb-placeholder" id="rfbPlaceholder">
-  <div class="ph-icon">📄</div>
-  <div class="ph-title">Aucun PDF chargé</div>
-  <div class="ph-sub">Le document RFB n’est pas encore disponible.</div>
-</div>
-     </div>
+      <div class="rfb-placeholder" id="rfbPlaceholder">
+        <div class="ph-icon">📄</div>
+        <div class="ph-title">Document RFB en cours de préparation</div>
+        <div class="ph-sub">
+          Le fichier PDF du RFB sera disponible prochainement.<br>
+          En attendant, suivez les étapes de nettoyage ci-dessous.
+        </div>
+      </div>
     </div>
-          </div>
+    <div class="rfb-steps">
+      <div class="rfb-steps-title">🧹 Étapes de nettoyage obligatoires</div>
+      <div class="rfb-steps-list">
+        <div class="rfb-step"><span class="step-num">1</span>Nettoyer les plaques chauffantes</div>
+        <div class="rfb-step"><span class="step-num">2</span>Vérifier les pièces moules</div>
+        <div class="rfb-step"><span class="step-num">3</span>Contrôler la cale moule</div>
+        <div class="rfb-step"><span class="step-num">4</span>Inspecter visuellement l'ensemble</div>
+        <div class="rfb-step"><span class="step-num">5</span>Ranger à l'emplacement indiqué</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════════ SCANNER ══════════ -->
 <div id="view-scan" class="view active">
@@ -960,6 +1350,52 @@
       <div style="font-size:1.2rem;font-weight:700;color:var(--accent2);">Article non trouvé</div>
       <div style="font-size:.9rem;color:var(--dim);margin-top:4px;">Ce code n'est pas dans la base. Vérifiez le scan.</div>
     </div>
+  <!-- ── COMPOSANT SCAN ZONE ── -->
+  <div id="compScanZone">
+    <div class="comp-scan-header">
+      <div>
+        <div class="comp-scan-title" id="compScanTitle">Vérification des composants</div>
+        <div style="font-size:.85rem;color:var(--dim);margin-top:2px;" id="compScanArticle"></div>
+      </div>
+      <div class="comp-scan-progress" id="compScanProgress">0 / 0</div>
+    </div>
+    <div class="comp-scan-body">
+      <!-- Current composant -->
+      <div class="comp-current" id="compCurrent">
+        <div class="comp-current-icon" id="compIcon">📦</div>
+        <div class="comp-current-name" id="compName">—</div>
+        <div class="comp-current-code" id="compCode">—</div>
+        <!-- Scan input -->
+        <div class="comp-scan-input-row">
+          <input type="text" id="compScanInput"
+                 placeholder="Scannez le composant..."
+                 onkeydown="if(event.key==='Enter') validateCompScan()" />
+          <button class="btn btn-primary" onclick="validateCompScan()">✔</button>
+        </div>
+        <!-- State buttons -->
+        <div class="comp-state-btns">
+          <button class="comp-state-btn bon" onclick="selectCompState('bon')">
+            <span class="csb-icon">✅</span>BON
+          </button>
+          <button class="comp-state-btn man" onclick="selectCompState('man')">
+            <span class="csb-icon">❌</span>MANQUANT
+          </button>
+          <button class="comp-state-btn def" onclick="selectCompState('def')">
+            <span class="csb-icon">⚠️</span>DÉFECTUEUX
+          </button>
+        </div>
+      </div>
+      <!-- Progress list -->
+      <div class="comp-progress-list" id="compProgressList"></div>
+    </div>
+    <div class="comp-scan-footer">
+      <button class="btn btn-ghost" onclick="skipAllComps()">⏭ Passer tout — BON</button>
+      <button class="btn btn-primary" id="compNextBtn" onclick="nextComp()" disabled>
+        Composant suivant →
+      </button>
+    </div>
+  </div>
+
   </div>
 </div>
 
@@ -1226,41 +1662,21 @@ function doScan(){
   if(notFound) notFound.style.display="none";
 
   if(currentMode==="OUT"){
-    // Check inventaire — block if incomplet
-    const artStatus = getArticleStatus(article);
-    if(artStatus==="incomplet"){
-      showToast("⚠ Article INCOMPLET — vérifiez l'inventaire avant de sortir !","orange");
-      const comps = getComponents(article);
-      const problems = comps.filter(c=>invData[c.code]==="man"||invData[c.code]==="def");
-      document.getElementById("entreeDisplay").style.display="none";
-      document.getElementById("sortieDisplay").style.display="none";
-      document.getElementById("notFound").style.display="block";
-      document.getElementById("notFound").innerHTML = `
-        <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
-        <div style="font-size:1.2rem;font-weight:700;color:var(--accent2);">SORTIE BLOQUÉE — Article incomplet</div>
-        <div style="font-size:.9rem;color:var(--dim);margin-top:6px;">${article.ref} (${article.code})</div>
-        <div style="margin-top:10px;">${problems.map(c=>`<div style="color:var(--accent2);font-size:.85rem;">❌ ${c.name} : ${invData[c.code]==="man"?"Manquant":"Défectueux"}</div>`).join("")}</div>
-        <div style="margin-top:10px;font-size:.8rem;color:var(--dim);">Allez dans l'onglet 📦 Inventaire pour corriger.</div>
-      `;
-      document.getElementById("scanInput").value="";
-      return;
-    }
     pendingSortieArticle = article;
     document.getElementById("modalArticleName").textContent =
       article.ref + " (" + article.code + ") — Sur quelle machine CT12 ?";
     document.getElementById("modalOverlay").classList.add("visible");
     return;
   }
-
-  finalizeScan(article, "IN", null);
+  startCompScan(article, "IN", null);
 }
 
 function confirmSortie(machineName){
-  const article = pendingSortieArticle; // sauvegarde avant closeModal
+  const article = pendingSortieArticle;
   pendingSortieArticle = null;
   document.getElementById("modalOverlay").classList.remove("visible");
   if(!article) return;
-  finalizeScan(article, "OUT", machineName);
+  startCompScan(article, "OUT", machineName);
 }
 
 function closeModal(){
@@ -1270,10 +1686,205 @@ function closeModal(){
   pendingSortieArticle = null;
 }
 
-function finalizeScan(article, action, machineName){
+// ══════════════════════════════════════
+// COMPOSANT SCAN FLOW
+// ══════════════════════════════════════
+let compScanState = {
+  article: null,
+  action: null,
+  machineName: null,
+  comps: [],
+  currentIdx: 0,
+  results: {},  // compCode -> "bon"|"man"|"def"
+  selectedState: null
+};
+
+function startCompScan(article, action, machineName){
+  const comps = getComponents(article);
+  compScanState = {
+    article, action, machineName,
+    comps, currentIdx: 0,
+    results: {}, selectedState: null
+  };
+
+  // Show comp scan zone
+  document.getElementById("compScanZone").style.display = "block";
+  document.getElementById("entreeDisplay").style.display = "none";
+  document.getElementById("sortieDisplay").style.display = "none";
+  document.getElementById("notFound").style.display = "none";
+
+  const actionLabel = action === "IN" ? "ENTRÉE" : "SORTIE";
+  document.getElementById("compScanTitle").textContent =
+    `Vérification composants — ${actionLabel}`;
+  document.getElementById("compScanArticle").textContent =
+    `${article.ref}  (${article.code})`;
+
+  renderCompStep();
+}
+
+function renderCompStep(){
+  const state = compScanState;
+  const total = state.comps.length;
+  const idx   = state.currentIdx;
+
+  document.getElementById("compScanProgress").textContent = `${idx} / ${total}`;
+
+  if(idx >= total){
+    // All done — finalize
+    finalizeWithComps();
+    return;
+  }
+
+  const comp = state.comps[idx];
+  const icons = {PL1:"🔥",PL2:"🔥",MO1:"🔩",MO2:"🔩",CAL:"📐",VER:"⚙️",BLK:"🔲",CBP:"📐"};
+  const suffix = comp.code.split("-").pop();
+
+  document.getElementById("compIcon").textContent = icons[suffix] || "📦";
+  document.getElementById("compName").textContent = comp.name;
+  document.getElementById("compCode").textContent = comp.code;
+  document.getElementById("compScanInput").value = "";
+  document.getElementById("compScanInput").focus();
+
+  // Reset state buttons
+  state.selectedState = null;
+  document.querySelectorAll(".comp-state-btn").forEach(b => b.classList.remove("selected"));
+  document.getElementById("compNextBtn").disabled = true;
+
+  // Render progress list
+  renderCompProgressList();
+}
+
+function renderCompProgressList(){
+  const state = compScanState;
+  const listEl = document.getElementById("compProgressList");
+  listEl.innerHTML = state.comps.map((c, i) => {
+    const res = state.results[c.code];
+    const done = res != null;
+    const isCurrent = i === state.currentIdx;
+    let cls = done ? `done-${res}` : (isCurrent ? "" : "pending");
+    let badge = "";
+    if(res === "bon")  badge = `<span class="comp-prog-badge badge-bon2">✅ BON</span>`;
+    else if(res === "man") badge = `<span class="comp-prog-badge badge-man2">❌ MANQUANT</span>`;
+    else if(res === "def") badge = `<span class="comp-prog-badge badge-def2">⚠️ DÉFECTUEUX</span>`;
+    else if(isCurrent) badge = `<span class="comp-prog-badge badge-pend2">← EN COURS</span>`;
+    else badge = `<span class="comp-prog-badge badge-pend2">— EN ATTENTE</span>`;
+    return `<div class="comp-prog-item ${cls}">
+      <span class="comp-prog-name">${c.name}</span>
+      ${badge}
+    </div>`;
+  }).join("");
+}
+
+function validateCompScan(){
+  const state = compScanState;
+  if(state.currentIdx >= state.comps.length) return;
+
+  const scanVal = document.getElementById("compScanInput").value.trim();
+  const comp    = state.comps[state.currentIdx];
+
+  // Accept: exact code match OR any non-empty scan
+  if(!scanVal){
+    showToast("Scannez le composant ou choisissez son état","orange");
+    return;
+  }
+
+  // If scanned code doesn't match — warn but allow
+  if(scanVal.toUpperCase() !== comp.code.toUpperCase() && scanVal !== "ok"){
+    showToast("Code différent — choisissez quand même l'état ci-dessous","orange");
+  }
+
+  // If state already selected — go next
+  if(state.selectedState){
+    nextComp();
+  } else {
+    showToast("Choisissez l'état : BON / MANQUANT / DÉFECTUEUX","orange");
+  }
+}
+
+function selectCompState(st){
+  compScanState.selectedState = st;
+  document.querySelectorAll(".comp-state-btn").forEach(b => b.classList.remove("selected"));
+  document.querySelector(`.comp-state-btn.${st}`).classList.add("selected");
+  document.getElementById("compNextBtn").disabled = false;
+  // Auto-advance after short delay
+  setTimeout(() => nextComp(), 400);
+}
+
+function nextComp(){
+  const state = compScanState;
+  if(!state.selectedState){
+    showToast("Choisissez l'état du composant","orange");
+    return;
+  }
+  const comp = state.comps[state.currentIdx];
+  state.results[comp.code] = state.selectedState;
+
+  // Save to invData
+  invData[comp.code] = state.selectedState;
+  localStorage.setItem("mulh_inv_comp", JSON.stringify(invData));
+
+  state.currentIdx++;
+  state.selectedState = null;
+
+  if(state.currentIdx >= state.comps.length){
+    finalizeWithComps();
+  } else {
+    renderCompStep();
+  }
+}
+
+function skipAllComps(){
+  const state = compScanState;
+  // Mark all remaining as BON
+  for(let i = state.currentIdx; i < state.comps.length; i++){
+    const comp = state.comps[i];
+    state.results[comp.code] = "bon";
+    invData[comp.code] = "bon";
+  }
+  localStorage.setItem("mulh_inv_comp", JSON.stringify(invData));
+  state.currentIdx = state.comps.length;
+  finalizeWithComps();
+}
+
+function finalizeWithComps(){
+  const state = compScanState;
+  // Hide comp zone
+  document.getElementById("compScanZone").style.display = "none";
+
+  // Check if any incomplet
+  const problems = Object.entries(state.results)
+    .filter(([k,v]) => v === "man" || v === "def")
+    .map(([k,v]) => {
+      const comp = state.comps.find(c => c.code === k);
+      return `${comp?.name || k} : ${v === "man" ? "Manquant" : "Défectueux"}`;
+    });
+
+  if(state.action === "OUT" && problems.length > 0){
+    // Block sortie if problems
+    document.getElementById("notFound").style.display = "block";
+    document.getElementById("notFound").innerHTML = `
+      <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+      <div style="font-size:1.2rem;font-weight:700;color:var(--accent2);">SORTIE BLOQUÉE — Composants incomplets</div>
+      <div style="font-size:.9rem;color:var(--dim);margin-top:4px;">${state.article.ref} (${state.article.code})</div>
+      <div style="margin-top:10px;">${problems.map(p=>`<div style="color:var(--accent2);font-size:.85rem;">❌ ${p}</div>`).join("")}</div>
+    `;
+    showToast("SORTIE BLOQUÉE — Composants incomplets", "orange");
+    return;
+  }
+
+  // Proceed with finalizeScan
+  finalizeScan(state.article, state.action, state.machineName, state.results);
+}
+
+function finalizeScan(article, action, machineName, compResults){
   inventory[article.code] = action;
   if(action==="OUT") machine[article.code] = machineName;
   else delete machine[article.code];
+  // Save composant results if provided
+  if(compResults){
+    Object.assign(invData, compResults);
+    localStorage.setItem("mulh_inv_comp", JSON.stringify(invData));
+  }
 
   const loc = getLocation(article);
   const niv = getNivInfo(article.niv);
@@ -1801,7 +2412,7 @@ function renderInventaire(){
 // RFB — Règles de Fiche de Bon
 // ══════════════════════════════════════
 // Pour activer le PDF, remplacez RFB_PDF_URL par le chemin de votre fichier
-const RFB_PDF_URL = "RFB.pdf"; //
+const RFB_PDF_URL = ""; // ex: "RFB.pdf" ou URL complète
 
 function openRFB(){
   document.getElementById("rfbOverlay").classList.add("visible");
@@ -1824,6 +2435,8 @@ function closeRFB(){
 document.addEventListener("keydown", e=>{
   if(e.key==="Escape") closeRFB();
 });
+
+
 
 // ══════════════════════════════════════
 // EXPORT EXCEL
@@ -2142,13 +2755,6 @@ boot();
            (full.length * 7919).toString(16).padStart(8,"0") +
            str.split("").reduce((a,c)=>a+c.charCodeAt(0),0).toString(16).padStart(8,"0");
   }
-  document.addEventListener("DOMContentLoaded", () => {
-  const firstView = document.querySelector(".view");
-  if (firstView) firstView.classList.add("active");
-
-  const firstTab = document.querySelector(".tab");
-  if (firstTab) firstTab.classList.add("active");
-});
 })();
 </script>
 </body>
